@@ -118,7 +118,6 @@ size_dat1 <- POAL_data1 %>%
   filter(!is.na(logsize_t))
 
 POAL_data_list <- list(surv_t1 = surv_dat1$surv_t1, logsize_t = size_dat1$logsize_t, N = nrow(size_dat1))
-POAL_data_list
 
 str(POAL_data_list)
 
