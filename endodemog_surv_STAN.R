@@ -160,3 +160,6 @@ out <- stan(file = "endodemog_surv.stan", data = POAL_data_list,
 print(out)
 plot(out)
 pairs(out)
+
+# Save the stan object
+saveRDS(out, "out.rds")
