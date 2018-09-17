@@ -1,5 +1,6 @@
 ## Grass endophyte population model with a bayesian framework
 ## Survival kernel
+## Author: Joshua Fowler
 
 
 setwd("~/Documents/R projects")
@@ -9,6 +10,8 @@ library(StanHeaders)
 library(shinystan)
 library(bayesplot)
 library(devtools)
+
+## Load data and remove NAs
 LTREB_endodemog <- read.csv("~/Documents/R projects/LTREBendodemog/LTREB_endodemog.csv")
 View(LTREB_endodemog)
 POAL_data <- filter(LTREB_endodemog, species == "POAL")
@@ -26,6 +29,8 @@ POAL_data1 <- POAL_data %>%
   filter(!is.na(surv_t1))
 dim(POAL_data)
 dim(POAL_data1)
+
+## Create functions for linear predictors
 invlogit<-function(x){exp(x)/(1+exp(x))}
 logit = function(x) { log(x/(1-x)) }
 
@@ -44,28 +49,30 @@ surv_bin <- POAL_data %>%
 plot(POAL_data$surv_t1 ~ log(POAL_data$size_t), xlab = "Size in year t", ylab = "Survival in year t+1", col="gray")        
 points(surv_bin$mean_size, surv_bin$mean_surv, pch=16, cex=2)
 
-## Here is the basic model for Survival ##
+## Here is the basic R model for Survival ##
 
-survival_model <- glm(surv_t1 ~1+ log(size_t), family = "binomial", data=POAL_data)
+survival_model <- glm(surv_t1 ~ log(size_t), family = "binomial", data=POAL_data)
 summary(survival_model)
 
-## here is the Bayesian model ##
-#-----------------------------------#
-rstan_options(auto_write = TRUE)
+## Below is the stan model ##
+## Recommended setup options for MCMC simulations
+rstan_options(auto_write = TRUE)              
 options(mc.cores = parallel::detectCores())
 set.seed(120)
 
 
 ## MCMC settings
-ni <- 2000
-nb <- 500
+ni <- 1000
+nb <- 200
 nc <- 3
-## actual values from data
+
+## This first part is a model of the mean to learn Stan
+## Actual mean value from survival data
 mean(surv_dat$surv_t1)
 
 
-##Bernoulli model of the mean survival
-sink("LTREB_endodemog_Bmom.stan")
+## stan model of the mean of survival which has a Bernoulli distribution
+sink("endodemog_surv_Bmom.stan")
 cat("
     data { 
     int<lower=0> N; // number of observations
@@ -86,11 +93,9 @@ cat("
     ",fill=T)
 sink()
 
+sm <- stanc("endodemog_surv_Bmom.stan")
 
-
-sm <- stanc("LTREB_endodemog_Bmom.stan")
-## Call Stan from R
-
+## Call Stan from R and assign the output to "Bmom"
 surv_data_list <- list(surv_t1 = surv_dat$surv_t1, N = nrow(surv_dat))
 surv_data_list
 Bmom <- stan(file = "LTREB_endodemog_Bmom.stan", data = surv_data_list,
@@ -103,7 +108,7 @@ plot(Bmom)
 pairs(Bmom)
 
 
-## data for GLM
+## Prepare data for GLM
 
 POAL_data1 <- POAL_data %>% 
   mutate(size_t, logsize_t = log(size_t))
@@ -148,9 +153,11 @@ sink()
 
 sm <- stanc("LTREB_endodemog.stan")
 
-
+## Call Stan from R and assign the output to "out"
 out <- stan(file = "LTREB_endodemog.stan", data = POAL_data_list,
             iter = ni, warmup = nb, chains = nc)
+
+## Summarize posteriors
 print(out)
 plot(out)
 pairs(out)
