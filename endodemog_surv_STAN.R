@@ -161,5 +161,6 @@ print(out)
 plot(out)
 pairs(out)
 
-# Save the stan object
+# Save the stan object and read out later
 saveRDS(out, "out.rds")
+out <- readRDS(file="out.rds")
