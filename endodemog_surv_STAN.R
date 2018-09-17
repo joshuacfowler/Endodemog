@@ -123,7 +123,7 @@ str(POAL_data_list)
 
 
 ## GLM - Survival vs log(size)
-sink("LTREB_endodemog.stan")
+sink("endodemog_surv.stan")
 cat("
     data { 
     int<lower=0> N;                     // number of observations
@@ -150,10 +150,10 @@ cat("
     ",fill=T)
 sink()
 
-sm <- stanc("LTREB_endodemog.stan")
+sm <- stanc("endodemog_surv.stan")
 
 ## Call Stan from R and assign the output to "out"
-out <- stan(file = "LTREB_endodemog.stan", data = POAL_data_list,
+out <- stan(file = "endodemog_surv.stan", data = POAL_data_list,
             iter = ni, warmup = nb, chains = nc)
 
 ## Summarize posteriors
