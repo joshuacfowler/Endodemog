@@ -1,6 +1,5 @@
 ## Grass endophyte population model with a bayesian framework
 ## Survival kernel
-## Author: Joshua Fowler
 
 
 setwd("~/Documents/R projects")
@@ -10,27 +9,27 @@ library(StanHeaders)
 library(shinystan)
 library(bayesplot)
 library(devtools)
-
-## Load data and remove NAs
-LTREB_endodemog <- read.csv("~/Documents/R projects/LTREBendodemog/LTREB_endodemog.csv")
-View(LTREB_endodemog)
-POAL_data <- filter(LTREB_endodemog, species == "POAL")
-View(POAL_data)
-surv_dat <- POAL_data %>% 
-  filter(!is.na(surv_t1))
-size_dat <- POAL_data %>% 
-  filter(!is.na(size_t))
-
-dim(surv_dat)
-dim(size_dat)
-POAL_data1 <- POAL_data %>% 
-  filter(!is.na(size_t)) %>%
-  mutate(size_t, logsize_t = log(size_t)) %>% 
-  filter(!is.na(surv_t1))
+LTREB_endodemog <- 
+  read.csv("~/Documents/R projects/LTREBendodemog/endo_demog_long.csv")
+#View(LTREB_endodemog)
+str(LTREB_endodemog)
+dim(LTREB_endodemog)
+POAL_data <- LTREB_endodemog %>% 
+  filter(species == "POAL")
+str(POAL_data)
 dim(POAL_data)
-dim(POAL_data1)
+#View(POAL_data)
+## recode endophyte status from 'plus' or 'minus' to 1 or 0
+POAL_data$endo[POAL_data$endo=='plus']<-as.numeric(1)
+POAL_data$endo[POAL_data$endo=='minus']<-as.numeric(0)
+## create new column with log(size)
+POAL_data1 <- POAL_data %>% 
+  mutate(size_t, logsize_t = log(size_t)) 
 
-## Create functions for linear predictors
+str(POAL_data1)
+dim(POAL_data1)
+#View(POAL_data1)
+
 invlogit<-function(x){exp(x)/(1+exp(x))}
 logit = function(x) { log(x/(1-x)) }
 
@@ -49,29 +48,27 @@ surv_bin <- POAL_data %>%
 plot(POAL_data$surv_t1 ~ log(POAL_data$size_t), xlab = "Size in year t", ylab = "Survival in year t+1", col="gray")        
 points(surv_bin$mean_size, surv_bin$mean_surv, pch=16, cex=2)
 
-## Here is the basic R model for Survival ##
+## Here is the basic model for Survival ##
 
 survival_model <- glm(surv_t1 ~ log(size_t), family = "binomial", data=POAL_data)
 summary(survival_model)
 
-## Below is the stan model ##
-## Recommended setup options for MCMC simulations
-rstan_options(auto_write = TRUE)              
+## here is the Bayesian model ##
+#-----------------------------------#
+rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 set.seed(120)
 
 
 ## MCMC settings
-ni <- 1000
-nb <- 200
-nc <- 3
-
-## This first part is a model of the mean to learn Stan
-## Actual mean value from survival data
+ni <- 500
+nb <- 100
+nc <- 1
+## actual values from data
 mean(surv_dat$surv_t1)
 
 
-## stan model of the mean of survival which has a Bernoulli distribution
+##Bernoulli model of the mean survival
 sink("endodemog_surv_Bmom.stan")
 cat("
     data { 
@@ -93,34 +90,40 @@ cat("
     ",fill=T)
 sink()
 
-sm <- stanc("endodemog_surv_Bmom.stan")
 
-## Call Stan from R and assign the output to "Bmom"
+
+stanmodel <- stanc("endodemog_surv_Bmom.stan")
+## Call Stan from R
 surv_data_list <- list(surv_t1 = surv_dat$surv_t1, N = nrow(surv_dat))
-surv_data_list
-Bmom <- stan(file = "LTREB_endodemog_Bmom.stan", data = surv_data_list,
+str(surv_data_list)
+Bmom <- stan(file = "endodemog_surv_Bmom.stan", data = surv_data_list,
             iter = ni, warmup = nb, chains = nc)
 
 
-## Summarize posteriors
+## Summarize parameters
 print(Bmom)
 plot(Bmom)
-pairs(Bmom)
+
+## Traceplot for parameters
+traceplot(Bmom)
 
 
-## Prepare data for GLM
 
-POAL_data1 <- POAL_data %>% 
-  mutate(size_t, logsize_t = log(size_t))
+## data for GLM
+
 surv_dat1 <- POAL_data1 %>% 
   filter(!is.na(surv_t1))
 size_dat1 <- POAL_data1 %>% 
   filter(!is.na(logsize_t))
+orig_dat1 <- POAL_data1 %>% 
+  filter(!is.na(origin)) %>% 
+  filter(== O) %>% 
+endo_dat1 <- POAL_data1 %>%
+  filter(!is.na(endo))
 
-POAL_data_list <- list(surv_t1 = surv_dat1$surv_t1, logsize_t = size_dat1$logsize_t, N = nrow(size_dat1))
+POAL_data_list <- list(surv_t1 = surv_dat1$surv_t1, logsize_t = size_dat1$logsize_t, origin = orig_dat1$origin, endo = endo_dat1$endo, N = nrow(POAL_data1))
 
 str(POAL_data_list)
-
 
 ## GLM - Survival vs log(size)
 sink("endodemog_surv.stan")
@@ -128,7 +131,7 @@ cat("
     data { 
     int<lower=0> N;                     // number of observations
     int<lower=0,upper=1> surv_t1[N]; // plant survival at time t+1 and target variable
-    row_vector [N] logsize_t;            // log of plant size at time t
+    vector [N] logsize_t;            // log of plant size at time t
     }
     
     parameters {
@@ -137,7 +140,7 @@ cat("
     }
 
     model {
-    row_vector[N] mu;
+    vector[N] mu;
     for(n in 1:N)
     mu = alpha + beta*logsize_t;  // linear predictor
   //Priors
@@ -150,17 +153,98 @@ cat("
     ",fill=T)
 sink()
 
-sm <- stanc("endodemog_surv.stan")
+stanmodel <- stanc("endodemog_surv.stan")
 
-## Call Stan from R and assign the output to "out"
-out <- stan(file = "endodemog_surv.stan", data = POAL_data_list,
+## Run the model by calling stan()
+sm <- stan(file = "endodemog_surv.stan", data = POAL_data_list,
             iter = ni, warmup = nb, chains = nc)
+print(sm)
 
-## Summarize posteriors
-print(out)
-plot(out)
-pairs(out)
+## save the stanfit object so that it can be 
+## called later without rerunning the model
+saveRDS(sm, file = "endodemog_surv.rds")
+sm <- readRDS(file = "endodemog_surv.rds")
 
-# Save the stan object and read out later
-saveRDS(out, "out.rds")
-out <- readRDS(file="out.rds")
+
+## check convergence and posterior distributions
+plot(sm)
+
+traceplot(sm)
+
+posterior <- as.matrix(sm)
+plot_title <- ggtitle("Posterior distributions",
+                      "with medians and 80% intervals")
+mcmc_areas(posterior,
+           pars = c("alpha", "beta"),
+           prob = 0.8) + plot_title
+
+shiny <- as.shinystan(sm)
+launch_shinystan(shiny)
+
+
+x_dummy <- seq(min((POAL_data1$size_t),na.rm=T),max((POAL_data1$logsize_t),na.rm=T),0.1)
+
+plot(POAL_data$surv_t1 ~ log(POAL_data$size_t), xlab = "Size in year t", ylab = "Survival in year t+1")        
+points(surv_bin$mean_size, surv_bin$mean_surv, pch=16, cex=2)
+lines(x_dummy,invlogit(coef(posterior)[1]+coef(posterior)[2]*x_dummy),col="red",lwd=3)
+
+
+
+
+## GLM - Survival vs log(size) with Origin and endophyte predictors
+sink("endodemog_surv_oe.stan")
+cat("
+    data { 
+    int<lower=0> N;                     // number of observations
+    int<lower=0,upper=1> surv_t1[N]; // plant survival at time t+1 and target variable
+    vector [N] logsize_t;            // log of plant size at time t
+    
+    }
+    
+    parameters {
+    real alpha; // intercept
+    real beta;  // slope
+    }
+    
+    model {
+    vector[N] mu;
+    for(n in 1:N)
+    mu = alpha + beta*logsize_t;  // linear predictor
+    //Priors
+    alpha ~ normal(0,100);
+    beta ~ normal(0,100);
+    
+    //Likelihood
+    surv_t1 ~ bernoulli_logit(mu);
+    }
+    ",fill=T)
+sink()
+
+sm <- stanc("endodemog_surv_oe.stan")
+
+## Run the model by calling stan()
+endodemog_surv <- stan(file = "endodemog_surv_oe.stan", data = POAL_data_list,
+                       iter = ni, warmup = nb, chains = nc)
+print(endodemog_surv)
+
+## save the stanfit object so that it can be 
+## called later without rerunning the model
+saveRDS(endodemog_surv, file = "endodemog_surv_oe.rds")
+endodemog_surv <- readRDS(file = "endodemog_surv_oe.rds")
+
+
+## check convergence and posterior distributions
+plot(endodemog_surv)
+
+traceplot(endodemog_surv)
+
+posterior <- as.matrix(endodemog_surv)
+plot_title <- ggtitle("Posterior distributions",
+                      "with medians and 80% intervals")
+mcmc_areas(posterior,
+           pars = c("alpha", "beta"),
+           prob = 0.8) + plot_title
+
+shiny <- as.shinystan(endodemog_surv)
+launch_shinystan(shiny)
+
