@@ -53,8 +53,7 @@ points(surv_bin$mean_size, surv_bin$mean_surv, pch=16, cex=2)
 survival_model <- glm(surv_t1 ~ log(size_t), family = "binomial", data=POAL_data)
 summary(survival_model)
 
-## here is the Bayesian model ##
-#-----------------------------------#
+## here is the Stan model ##
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 set.seed(120)
@@ -115,13 +114,14 @@ surv_dat1 <- POAL_data1 %>%
   filter(!is.na(surv_t1))
 size_dat1 <- POAL_data1 %>% 
   filter(!is.na(logsize_t))
+##Need to work on this for origin and endophyte effects ##
 orig_dat1 <- POAL_data1 %>% 
   filter(!is.na(origin)) %>% 
   filter(== O) %>% 
 endo_dat1 <- POAL_data1 %>%
   filter(!is.na(endo))
 
-POAL_data_list <- list(surv_t1 = surv_dat1$surv_t1, logsize_t = size_dat1$logsize_t, origin = orig_dat1$origin, endo = endo_dat1$endo, N = nrow(POAL_data1))
+POAL_data_list <- list(surv_t1 = surv_dat1$surv_t1, logsize_t = size_dat1$logsize_t, N = nrow(POAL_data1))
 
 str(POAL_data_list)
 
@@ -181,7 +181,7 @@ mcmc_areas(posterior,
 shiny <- as.shinystan(sm)
 launch_shinystan(shiny)
 
-
+## I'm not sure how to pull out the coefficients from the stanfit object yet
 x_dummy <- seq(min((POAL_data1$size_t),na.rm=T),max((POAL_data1$logsize_t),na.rm=T),0.1)
 
 plot(POAL_data$surv_t1 ~ log(POAL_data$size_t), xlab = "Size in year t", ylab = "Survival in year t+1")        
@@ -191,7 +191,7 @@ lines(x_dummy,invlogit(coef(posterior)[1]+coef(posterior)[2]*x_dummy),col="red",
 
 
 
-## GLM - Survival vs log(size) with Origin and endophyte predictors
+## In Progress... GLM - Survival vs log(size) with Origin and endophyte predictors
 sink("endodemog_surv_oe.stan")
 cat("
     data { 
@@ -220,31 +220,31 @@ cat("
     ",fill=T)
 sink()
 
-sm <- stanc("endodemog_surv_oe.stan")
+stanmodel2 <- stanc("endodemog_surv_oe.stan")
 
 ## Run the model by calling stan()
-endodemog_surv <- stan(file = "endodemog_surv_oe.stan", data = POAL_data_list,
+sm2 <- stan(file = "endodemog_surv_oe.stan", data = POAL_data_list,
                        iter = ni, warmup = nb, chains = nc)
-print(endodemog_surv)
+print(sm2)
 
 ## save the stanfit object so that it can be 
 ## called later without rerunning the model
-saveRDS(endodemog_surv, file = "endodemog_surv_oe.rds")
-endodemog_surv <- readRDS(file = "endodemog_surv_oe.rds")
+saveRDS(sm2, file = "endodemog_surv_oe.rds")
+sm2 <- readRDS(file = "endodemog_surv_oe.rds")
 
 
 ## check convergence and posterior distributions
-plot(endodemog_surv)
+plot(sm2)
 
-traceplot(endodemog_surv)
+traceplot(sm2)
 
-posterior <- as.matrix(endodemog_surv)
+posterior <- as.matrix(sm2)
 plot_title <- ggtitle("Posterior distributions",
                       "with medians and 80% intervals")
 mcmc_areas(posterior,
            pars = c("alpha", "beta"),
            prob = 0.8) + plot_title
 
-shiny <- as.shinystan(endodemog_surv)
-launch_shinystan(shiny)
+shiny2 <- as.shinystan(sm2)
+launch_shinystan(shiny2)
 
