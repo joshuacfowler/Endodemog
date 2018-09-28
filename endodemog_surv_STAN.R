@@ -107,7 +107,6 @@ plot(Bmom)
 traceplot(Bmom)
 
 
-
 ## data for GLM
 
 surv_dat1 <- POAL_data1 %>% 
