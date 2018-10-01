@@ -67,26 +67,37 @@ str(POAL_data_list)
 sink("endodemog_surv.stan")
 cat("
     data { 
+    int,lower=0> K;                   // number of model predictors
     int<lower=0> N;                   // number of observations
-    int<lower=0,upper=1> surv_t1[N];  // plant survival at time t+1 and target variable
-    int<lower=0> year_t[N];            // year of planting
-    vector [N] logsize_t;             // log of plant size at time t
+    int<lower=0> Y;                   // number of years
+    int<lower=0,upper=1> surv_t1[N];  // plant survival at time t+1 and target variable (response)
+    int<lower=0> year_t[Y];           // year of planting (random effect)
+    vector [N] logsize_t;             // log of plant size at time t (predictor (fixed effect))
     }
     
     parameters {
-    real alpha; // intercept
-    real beta;  // slope
+    real alpha;       // intercept
+    real beta_size;   // size parameter
+    real beta_year;    // year effects parameter
     }
     
+    transformed parameters{
+    real beta0_y[Y]
+    for (y in 1:Y){
+       beta0_y[y] = u_beta0 + s_beta0_r * beta0_r_tilde[r];
+    }
+
     model {
+    // Linear Predictor
     vector[N] mu;
     for(n in 1:N)
-    mu = alpha + beta*logsize_t;  // linear predictor
-    //Priors
+       mu = alpha + beta_year*beta_size*logsize_t;  // linear predictor
+    // Priors
     alpha ~ normal(0,100);
-    beta ~ normal(0,100);
+    beta_size ~ normal(0,100);
+    beta_year ~ normal(0,100);
     
-    //Likelihood
+    // Likelihood
     surv_t1 ~ bernoulli_logit(mu);
     }
     ",fill=T)
