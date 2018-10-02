@@ -104,8 +104,8 @@ sm <- stan(file = "endodemog_surv_year.stan", data = POAL_data_list,
 print(sm)
 ## save the stanfit object so that it can be 
 ## called later without rerunning the model
-saveRDS(sm, file = "endodemog_surv.rds")
-sm <- readRDS(file = "endodemog_surv.rds")
+saveRDS(sm, file = "endodemog_surv_year.rds")
+sm <- readRDS(file = "endodemog_surv_year.rds")
 
 
 ## check convergence and posterior distributions
