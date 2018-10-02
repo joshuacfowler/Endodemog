@@ -38,12 +38,9 @@ options(mc.cores = parallel::detectCores())
 set.seed(120)
 
 ## MCMC settings
-ni <- 500
-nb <- 100
+ni <- 100
+nb <- 10
 nc <- 1
-## actual values from data
-mean(surv_dat$surv_t1)
-
 
 ## data for GLMM
 POAL_data1 <- POAL_data1 %>% 
@@ -55,59 +52,55 @@ surv_dat1 <- POAL_data1 %>%
   filter(!is.na(surv_t1))
 size_dat1 <- POAL_data1 %>% 
   filter(!is.na(logsize_t))
+year_data <- POAL_data1 %>% 
+  filter(!is.na(year_t)) %>% 
+  recode(year_t, '2007'=1, '2008'=2, '2009'=3, '2010'=4, '2011'=5, '2012'=6, '2013'=7, '2014'=8, '2015'=9, '2016'=10, '2017'=11)
 year_dat <- POAL_data1 %>% 
-  filter(!is.na(year_t))
+  filter(!is.na(year_t)) %>% 
+  mutate(year_t_index = recode(year_t, '2007'=1, '2008'=2, '2009'=3, '2010'=4, '2011'=5, '2012'=6, '2013'=7, '2014'=8, '2015'=9, '2016'=10, '2017'=11))
 
-POAL_data_list <- list(surv_t1 = surv_dat1$surv_t1, logsize_t = size_dat1$logsize_t, year = year_dat$year_t, N = nrow(POAL_data1))
+
+POAL_data_list <- list(surv_t1 = surv_dat1$surv_t1, logsize_t = size_dat1$logsize_t, year_t = year_dat$year_t_index, N = nrow(POAL_data1), Y = length(unique(year_dat$year_t_index)))
 
 str(POAL_data_list)
 
 ## GLMM for survival vs. log(size) with year effects
 
-sink("endodemog_surv.stan")
+sink("endodemog_surv_year.stan")
 cat("
     data { 
-    int,lower=0> K;                   // number of model predictors
-    int<lower=0> N;                   // number of observations
-    int<lower=0> Y;                   // number of years
-    int<lower=0,upper=1> surv_t1[N];  // plant survival at time t+1 and target variable (response)
-    int<lower=0> year_t[Y];           // year of planting (random effect)
-    vector [N] logsize_t;             // log of plant size at time t (predictor (fixed effect))
+    int<lower=1> N;                   // number of observations
+    int<lower=1> Y;                   // number of years
+    int<lower=0> year_t[N];            // year of recruitment
+    int <lower=0,upper=1> surv_t1[N];  // plant survival at time t+1 and target variable (response)
+    real logsize_t[N];             // log of plant size at time t (predictor)
     }
     
     parameters {
-    real alpha;       // intercept
-    real beta_size;   // size parameter
-    real beta_year;    // year effects parameter
+    real alpha0;              // fixed intercept
+    real beta0;               // fixed slope
+    vector[Y] beta_year;      // random year intercept
     }
     
-    transformed parameters{
-    real beta0_y[Y]
-    for (y in 1:Y){
-       beta0_y[y] = u_beta0 + s_beta0_r * beta0_r_tilde[r];
-    }
-
     model {
-    // Linear Predictor
     vector[N] mu;
-    for(n in 1:N)
-       mu = alpha + beta_year*beta_size*logsize_t;  // linear predictor
     // Priors
-    alpha ~ normal(0,100);
-    beta_size ~ normal(0,100);
-    beta_year ~ normal(0,100);
-    
+    beta_year ~ normal(0,100); // year random effects
+    // Linear Predictor
+    for(n in 1:N)
+       mu[n] = alpha0 + beta_year[year_t[n]] + beta0 * logsize_t[n];
     // Likelihood
     surv_t1 ~ bernoulli_logit(mu);
     }
-    ",fill=T)
+      ",fill=T)
 sink()
 
-stanmodel <- stanc("endodemog_surv.stan")
+stanmodel <- stanc("endodemog_surv_year.stan")
 
 ## Run the model by calling stan()
-sm <- stan(file = "endodemog_surv.stan", data = POAL_data_list,
+sm <- stan(file = "endodemog_surv_year.stan", data = POAL_data_list,
            iter = ni, warmup = nb, chains = nc)
+
 print(sm)
 ## save the stanfit object so that it can be 
 ## called later without rerunning the model
@@ -124,7 +117,7 @@ posterior <- as.matrix(sm)
 plot_title <- ggtitle("Posterior distributions",
                       "with medians and 80% intervals")
 mcmc_areas(posterior,
-           pars = c("alpha", "beta"),
+           pars = c("alpha0", "beta0", "beta_year[1]"),
            prob = 0.8) + plot_title
 
 shiny <- as.shinystan(sm)
