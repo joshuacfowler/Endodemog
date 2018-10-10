@@ -23,7 +23,8 @@ dim(POAL_data)
 
 ## create new column with log(size)
 POAL_data1 <- POAL_data %>% 
-  mutate(size_t, logsize_t = log(size_t)) 
+  mutate(size_t, logsize_t = log(size_t)) %>% 
+  mutate(year_t_index = as.integer(recode(year_t, '2007'=1, '2008'=2, '2009'=3, '2010'=4, '2011'=5, '2012'=6, '2013'=7, '2014'=8, '2015'=9, '2016'=10, '2017'=11)))
 
 str(POAL_data1)
 dim(POAL_data1)
@@ -35,11 +36,11 @@ logit = function(x) { log(x/(1-x)) }
 ## here is the Stan model ##
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
-set.seed(120)
+set.seed(123)
 
 ## MCMC settings
-ni <- 100
-nb <- 10
+ni <- 10
+nb <- 2
 nc <- 1
 
 ## data for GLMM
@@ -48,32 +49,32 @@ POAL_data1 <- POAL_data1 %>%
   filter(!is.na(logsize_t))
 
 dim(POAL_data1)
+View(POAL_data1)
 surv_dat1 <- POAL_data1 %>% 
   filter(!is.na(surv_t1))
 size_dat1 <- POAL_data1 %>% 
   filter(!is.na(logsize_t))
-year_data <- POAL_data1 %>% 
-  filter(!is.na(year_t)) %>% 
-  recode(year_t, '2007'=1, '2008'=2, '2009'=3, '2010'=4, '2011'=5, '2012'=6, '2013'=7, '2014'=8, '2015'=9, '2016'=10, '2017'=11)
 year_dat <- POAL_data1 %>% 
-  filter(!is.na(year_t)) %>% 
-  mutate(year_t_index = recode(year_t, '2007'=1, '2008'=2, '2009'=3, '2010'=4, '2011'=5, '2012'=6, '2013'=7, '2014'=8, '2015'=9, '2016'=10, '2017'=11))
+  filter(!is.na(year_t))
 
+dim(surv_dat1)
+dim(size_dat1)
+dim(year_dat)
 
 POAL_data_list <- list(surv_t1 = surv_dat1$surv_t1, logsize_t = size_dat1$logsize_t, year_t = year_dat$year_t_index, N = nrow(POAL_data1), Y = length(unique(year_dat$year_t_index)))
 
 str(POAL_data_list)
-
+View(POAL_data_list)
 ## GLMM for survival vs. log(size) with year effects
 
 sink("endodemog_surv_year.stan")
 cat("
     data { 
-    int<lower=1> N;                   // number of observations
-    int<lower=1> Y;                   // number of years
-    int<lower=0> year_t[N];            // year of recruitment
-    int <lower=0,upper=1> surv_t1[N];  // plant survival at time t+1 and target variable (response)
-    real logsize_t[N];             // log of plant size at time t (predictor)
+    int<lower=0> N;                     // number of observations
+    int<lower=0> Y;                     // number of years (used as index)
+    int<lower=0> year_t[N];             // year of recruitment
+    int<lower=0,upper=1> surv_t1[N];   // plant survival at time t+1 and target variable (response)
+    real logsize_t[N];                  // log of plant size at time t (predictor)
     }
     
     parameters {
@@ -85,20 +86,24 @@ cat("
     model {
     vector[N] mu;
     // Priors
-    beta_year ~ normal(0,100); // year random effects
+    alpha0 ~ normal(0,100);     // prior for intercept
+    beta0 ~ normal(0,100);      // prior for slope
+    beta_year ~ normal(0,10);  // prior for year random effects
     // Linear Predictor
     for(n in 1:N)
-       mu[n] = alpha0 + beta_year[year_t[n]] + beta0 * logsize_t[n];
+       mu[n] = alpha0 + beta_year[year_t[n]] + beta0*logsize_t[n];
     // Likelihood
-    surv_t1 ~ bernoulli_logit(mu);
+    for(n in 1:N)
+    surv_t1[n] ~ bernoulli_logit(mu);
     }
+
       ",fill=T)
 sink()
 
 stanmodel <- stanc("endodemog_surv_year.stan")
 
 ## Run the model by calling stan()
-sm <- stan(file = "endodemog_surv_year.stan", data = POAL_data_list,
+sm <- stan(file = 'endodemog_surv_year.stan', data = POAL_data_list,
            iter = ni, warmup = nb, chains = nc)
 
 print(sm)

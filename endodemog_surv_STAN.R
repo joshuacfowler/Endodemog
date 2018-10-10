@@ -60,8 +60,8 @@ set.seed(120)
 
 
 ## MCMC settings
-ni <- 500
-nb <- 100
+ni <- 100
+nb <- 10
 nc <- 1
 ## actual values from data
 mean(surv_dat$surv_t1)
@@ -93,7 +93,7 @@ sink()
 
 stanmodel <- stanc("endodemog_surv_Bmom.stan")
 ## Call Stan from R
-surv_data_list <- list(surv_t1 = surv_dat$surv_t1, N = nrow(surv_dat))
+surv_data_list <- list(surv_t1 = surv_dat1$surv_t1, N = nrow(surv_dat1))
 str(surv_data_list)
 Bmom <- stan(file = "endodemog_surv_Bmom.stan", data = surv_data_list,
             iter = ni, warmup = nb, chains = nc)
@@ -113,41 +113,38 @@ surv_dat1 <- POAL_data1 %>%
   filter(!is.na(surv_t1))
 size_dat1 <- POAL_data1 %>% 
   filter(!is.na(logsize_t))
-##Need to work on this for origin and endophyte effects ##
-orig_dat1 <- POAL_data1 %>% 
-  filter(!is.na(origin)) %>% 
-  filter(== O) %>% 
-endo_dat1 <- POAL_data1 %>%
-  filter(!is.na(endo))
 
-POAL_data_list <- list(surv_t1 = surv_dat1$surv_t1, logsize_t = size_dat1$logsize_t, N = nrow(POAL_data1))
+dim(POAL_data1)
+dim(surv_dat1)
+dim(size_dat1)
+
+POAL_data_list <- list(surv_t1 = surv_dat1$surv_t1, logsize_t = size_dat1$logsize_t, N = as.integer(nrow(surv_dat1)))
 
 str(POAL_data_list)
-
+View(POAL_data_list)
 ## GLM - Survival vs log(size)
 sink("endodemog_surv.stan")
 cat("
     data { 
-    int<lower=0> N;                     // number of observations
-    int<lower=0,upper=1> surv_t1[N]; // plant survival at time t+1 and target variable
-    vector [N] logsize_t;            // log of plant size at time t
+    int<lower=0> N;                   // number of observations
+    int<lower=0,upper=1> surv_t1[N];  // plant survival at time t+1 and target variable
+    matrix[N,1] logsize_t;        // log of plant size at time t
     }
     
     parameters {
     real alpha; // intercept
-    real beta;  // slope
+    vector[1] beta;  // slope
     }
 
     model {
-    vector[N] mu;
-    for(n in 1:N)
-    mu = alpha + beta*logsize_t;  // linear predictor
+    //vector[N] mu;
+  
   //Priors
     alpha ~ normal(0,100);
     beta ~ normal(0,100);
+     // mu = alpha + logsize_t*beta;  // linear predictor
+      surv_t1 ~ bernoulli_logit(alpha + logsize_t*beta); // likelihood
     
-  //Likelihood
-    surv_t1 ~ bernoulli_logit(mu);
     }
     ",fill=T)
 sink()
