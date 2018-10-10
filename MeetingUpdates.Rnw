@@ -1,0 +1,24 @@
+\documentclass{article}
+\title{Meeting Updates}
+\author{Joshua Fowler}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+  \maketitle
+
+\section*{Oct. 3, 2018}
+
+\subsection*{Meeting Overview}
+
+We discussed the Hertz Fellowship, predictions and next steps for the transplant experiment, as well as other possible research directions to explore.
+
+\subsection*{Goals for Next Meeting and Beyond}
+\textbf{Goals include:} 
+\begin{itemize}
+\item{Work on Hertz application}
+\item{Start on annotated bibliography and continue to look at systems/logistics}
+\item{Brainstorm other research ideas}
+\item{Work on Endodemog model with year effects and visualizing the model for Stan}
+\item{Work on Endodemog data cleaning script}
+\end{itemize}
+\end{document}
