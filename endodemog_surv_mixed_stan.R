@@ -12,7 +12,7 @@ library(devtools)
 LTREB_endodemog <- 
   read.csv("~/Documents/R projects/LTREBendodemog/endo_demog_long.csv")
 
-#View(LTREB_endodemog)
+View(LTREB_endodemog)
 str(LTREB_endodemog)
 dim(LTREB_endodemog)
 
@@ -39,8 +39,8 @@ options(mc.cores = parallel::detectCores())
 set.seed(123)
 
 ## MCMC settings
-ni <- 10
-nb <- 2
+ni <- 100
+nb <- 10
 nc <- 1
 
 ## data for GLMM
@@ -118,20 +118,23 @@ plot(sm)
 
 traceplot(sm)
 
-posterior <- as.matrix(sm)
+posterior <- as.data.frame(sm)
 plot_title <- ggtitle("Posterior distributions",
                       "with medians and 80% intervals")
 mcmc_areas(posterior,
-           pars = c("alpha0", "beta0", "beta_year[1]"),
+           pars = c("alpha0", "beta0", "beta_year[1]", "beta_year[2]", "beta_year[3]", "beta_year[4]", "beta_year[5]"),
            prob = 0.8) + plot_title
-
+sm_summary <- summary(sm)
+inits <- get_inits(sm)
 shiny <- as.shinystan(sm)
 launch_shinystan(shiny)
 
 ## I'm not sure how to pull out the coefficients from the stanfit object yet
+
+
 x_dummy <- seq(min((POAL_data1$size_t),na.rm=T),max((POAL_data1$logsize_t),na.rm=T),0.1)
 
 plot(POAL_data$surv_t1 ~ log(POAL_data$size_t), xlab = "Size in year t", ylab = "Survival in year t+1")        
 points(surv_bin$mean_size, surv_bin$mean_surv, pch=16, cex=2)
-lines(x_dummy,invlogit(coef(posterior)[1]+coef(posterior)[2]*x_dummy),col="red",lwd=3)
+lines(x_dummy,invlogit(coef(posterior$mean[1])+coef(posterior$mean[2])*x_dummy),col="red",lwd=3)
 
