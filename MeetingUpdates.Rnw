@@ -10,9 +10,35 @@
 %\SweaveOpts{concordance=TRUE}
   \maketitle
 
-Tom's comments are in \tom{WildStrawberry}.
-\section*{Oct. 3, 2018}
 
+Tom's comments are in \tom{WildStrawberry}.
+
+\section*{Oct. 11, 2018}
+
+\subsection*{Meeting Overview}
+
+We discussed our survival model with year effects, and briefly looked at the model output. We talked about starting to work with the raw data, and potentially starting to look at working on the growth model. We also talked about the EvoDemoSoc meeting, which would be really cool to attend.
+
+\subsection*{Goals for Next Meeting and Beyond}
+\textbf{Goals include:} 
+\begin{itemize}
+\item{Build script to clean up data}
+\item{Get year variance from model, and visualize posterior predictive checks}
+\item{Figure out my computer's Stan error}
+\item{Start to work on Growth (start with Poisson distribution) \tom{When you are ready for it, I can share an example of negative binomial growth modeling in Stan.}}
+\end{itemize}
+
+\subsection*{Goals continuing from last Meeting}
+\textbf{Goals include:} 
+\begin{itemize}
+\item{Work on Hertz application}
+\item{Work on annotated bibliography and continue to look at systems/logistics \tom{See comment on same point below}}
+\item{Brainstorm other research ideas: Reading about Geographic mosaic theory of coevolution for Tuesday, Oct. 16th}
+\end{itemize}
+
+
+\section*{Oct. 3, 2018}
+\tom{I made the notes below before pulling some of the more recent meeting notes - sorry. Some of these are not as relevant given your points above.}
 \subsection*{Meeting Overview}
 
 We discussed the Hertz Fellowship, predictions and next steps for the transplant experiment, as well as other possible research directions to explore.
