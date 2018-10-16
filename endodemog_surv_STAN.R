@@ -61,6 +61,7 @@ survival_model <- glm(surv_t1 ~ log(size_t), family = "binomial", data=POAL_data
 summary(survival_model)
 
 ## here is the Stan model ##
+Sys.setenv(USE_CXX14 = 1)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 set.seed(120)
@@ -102,7 +103,7 @@ stanmodel <- stanc("endodemog_surv_Bmom.stan")
 ## Call Stan from R
 surv_data_list <- list(surv_t1 = surv_dat1$surv_t1, N = nrow(surv_dat1))
 str(surv_data_list)
-Bmom <- stan(file = "endodemog_surv_Bmom.stan", data = surv_data_list,
+Bmom <- stan(file = "endodemog_surv_Bmom.stan", data = surv_data_list,verbose=TRUE,
             iter = ni, warmup = nb, chains = nc)
 
 

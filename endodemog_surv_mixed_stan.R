@@ -1,7 +1,7 @@
 ## Grass endophyte population model with a bayesian framework
 ## Survival kernel with mixed effects
 
-
+Sys.setenv(USE_CXX14 = 1)
 setwd("~/Documents/R projects")
 library(tidyverse)
 library(rstan)
