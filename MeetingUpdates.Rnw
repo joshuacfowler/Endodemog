@@ -1,10 +1,17 @@
 \documentclass{article}
+
+\usepackage[dvipsnames]{xcolor}
+\newcommand{\tom}[1]{{\textit{\color{WildStrawberry}{[#1]}}}}
+
 \title{Meeting Updates}
 \author{Joshua Fowler}
 
 \begin{document}
-\SweaveOpts{concordance=TRUE}
+%\SweaveOpts{concordance=TRUE}
   \maketitle
+
+
+Tom's comments are in \tom{WildStrawberry}.
 
 \section*{Oct. 11, 2018}
 
@@ -18,32 +25,32 @@ We discussed our survival model with year effects, and briefly looked at the mod
 \item{Build script to clean up data}
 \item{Get year variance from model, and visualize posterior predictive checks}
 \item{Figure out my computer's Stan error}
-\item{Start to work on Growth (start with Poisson distribution)}
+\item{Start to work on Growth (start with Poisson distribution) \tom{When you are ready for it, I can share an example of negative binomial growth modeling in Stan.}}
 \end{itemize}
 
 \subsection*{Goals continuing from last Meeting}
 \textbf{Goals include:} 
 \begin{itemize}
 \item{Work on Hertz application}
-\item{Work on annotated bibliography and continue to look at systems/logistics}
+\item{Work on annotated bibliography and continue to look at systems/logistics \tom{See comment on same point below}}
 \item{Brainstorm other research ideas: Reading about Geographic mosaic theory of coevolution for Tuesday, Oct. 16th}
 \end{itemize}
 
 
 \section*{Oct. 3, 2018}
-
+\tom{I made the notes below before pulling some of the more recent meeting notes - sorry. Some of these are not as relevant given your points above.}
 \subsection*{Meeting Overview}
 
 We discussed the Hertz Fellowship, predictions and next steps for the transplant experiment, as well as other possible research directions to explore.
 
-\subsection*{Goals for Next Meeting and Beyond}
+\subsection*{Goals for Next Meeting and Beyond \tom{Not clear which of goals below are near-term action items vs longer-term stuff.}}
 \textbf{Goals include:} 
 \begin{itemize}
-\item{Tom is testing something}
-\item{Work on Hertz application}
-\item{Start on annotated bibliography and continue to look at systems/logistics}
+\item{Work on Hertz application} \tom{What does `work' mean? What do you need to do?}
+\item{Start on annotated bibliography and continue to look at systems/logistics \tom{How will you do this? What steps will you take?}}
 \item{Brainstorm other research ideas}
-\item{Work on Endodemog model with year effects and visualizing the model for Stan}
-\item{Work on Endodemog data cleaning script}
+\item{Work on Endodemog model with year effects and visualizing the model for Stan \tom{This is a good, concrete goal. We talked about posterior predictive checks and I think this should be included in your modeling work.}}
+\item{Work on Endodemog data cleaning script \tom{Again, what are the steps involved here and what is your timeline for completing them?}} 
+\item{\tom{Obviously, most of my suggestions here are about making your work - and your ability to hold yourself accountable - more explicit with dates and specific steps.}}
 \end{itemize}
 \end{document}
