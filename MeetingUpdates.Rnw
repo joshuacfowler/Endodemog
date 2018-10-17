@@ -7,11 +7,38 @@
 \author{Joshua Fowler}
 
 \begin{document}
+\SweaveOpts{concordance=TRUE}
 %\SweaveOpts{concordance=TRUE}
   \maketitle
 
-
 Tom's comments are in \tom{WildStrawberry}.
+
+\section*{Oct. 16, 2018}
+
+\subsection*{Meeting Overview}
+
+We talked briefly about the Hertz fellowship and then we discussed geographic mosaic theory.Tom said he would send a couple of papers (I don't remember who by, but about range limits and gene flow). Overall, we will continue to think about these other topics, especially how they may be complementary to thinking about range limits, but we are going to focus on making progress on the modeling and on developing an annotated bibliography for the range limits questions. We also set a timeline for the co-review.
+
+\subsection*{Goals for Next Meeting and Beyond}
+\textbf{Goals include:} 
+\begin{itemize}
+\item{Read paper for co-review by Tuesday. I don't remember exactly what we laid out for the rest, but basically comments for the week following, then I will write up the review and give it to you to adjust. Can you add the timeline we talked about?}
+\item{Exploring other topics is partially on the backburner. See my continuing goals.}
+\end{itemize}
+
+\subsection*{Goals continuing from last Meeting}
+\textbf{Goals include:} 
+\begin{itemize}
+\item{For data cleanup script, I need to go through the raw data files, and loading them into Rstudio. I would like to have this done by next week. The next step is that I need to pull out the important columns and combine sheets. This is also the stage where the relational database will come in because we have to include the seed count data.}
+\item{For the model, I will include post. pred. checks by next Thursday. I think I will probably not start the Growth model until after next week but a good place to start is visualizing the data and writing the most simple Stan Model (using the Poisson distribution). I will put a hopeful goal of this for Thursday, Nov. 1st.}
+\item{Edit Hertz application essays, and finish the personal information/experience side of the application. Due Dates: \begin{itemize}
+\item{Feedback on my essays = Oct 19th} 
+\item{Josh's Application = Oct 24th} 
+\item{Reference Letters = Oct 26th}
+\end{itemize}}
+\item{For continuing to develop my research ideas, I am doing the annotated bibliography and exploring other ideas. Both of these are relevant to the Core Course final proposal, as well as Science Day presentations, and partially the EvoDemo conference. The core course final proposal is my current deadline for having a mostly finished annotated bibliography of the main ideas that I want to research}
+\item{For the annotated bibliography, identify the key papers that I am working from, like the Angert papers, for next week. I think it would be good to develop a list of my key words as well.}
+\end{itemize}
 
 \section*{Oct. 11, 2018}
 
