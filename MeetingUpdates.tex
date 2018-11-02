@@ -1,0 +1,105 @@
+\documentclass{article}
+
+\usepackage[dvipsnames]{xcolor}
+\newcommand{\tom}[1]{{\textit{\color{WildStrawberry}{[#1]}}}}
+
+\title{Meeting Updates}
+\author{Joshua Fowler}
+
+\usepackage{Sweave}
+\begin{document}
+\input{MeetingUpdates-concordance}
+%\SweaveOpts{concordance=TRUE}
+  \maketitle
+
+Tom's comments are in \tom{WildStrawberry}.
+\section*{Oct. 30, 2018}
+
+\subsection*{Meeting Overview}
+
+We discussed my progress in defining a project. We talked about how we have done some backwards type exploration and we want to push forwards to meet in the middle with the literature review. We basically talked about lining these up to fit the timeline of the proposal for core course, my application for the NDSEG, Science day, for the EvoDemo conference, and eventually for this summer.
+ 
+\subsection*{Goals for Next Meeting and Beyond}
+\textbf{Goals include:} 
+\begin{itemize}
+\item{Tom adds comments to the coreview by Thursday, update and send to New Phytologist by Friday.}
+\item{Have the annotated bibliography filled out at least as far as having the citations for literature related to fungal endophyte surveys, other related symbionts like wolbachia, and range limits with biotic interactions}
+\item{I will look this weekend at the application for the NSDEG fellowship and provide information for the letters of reference.}
+\end{itemize}
+
+\subsection*{Goals continuing from last Meeting}
+\textbf{Goals include:} 
+\begin{itemize}
+\item{For the data cleanup script, I need to read about relational databases, as I am at the point where I have gotten pretty far (melt and cast have been very helpful) with the main survival/growth sheet for Poal, but will have to set up the data for the seed production estimates.}
+\item{For continuing to develop my research ideas, I am doing the annotated bibliography and exploring other ideas. Both of these are relevant to the Core Course final proposal, as well as Science Day presentations, and partially the EvoDemo conference. The core course final proposal is my current deadline for having a mostly finished annotated bibliography of the main ideas that I want to research}
+\end{itemize}
+
+
+\section*{Oct. 16, 2018}
+
+\subsection*{Meeting Overview}
+
+We talked briefly about the Hertz fellowship and then we discussed geographic mosaic theory.Tom said he would send a couple of papers (I don't remember who by, but about range limits and gene flow). Overall, we will continue to think about these other topics, especially how they may be complementary to thinking about range limits, but we are going to focus on making progress on the modeling and on developing an annotated bibliography for the range limits questions. We also set a timeline for the co-review.
+
+\subsection*{Goals for Next Meeting and Beyond}
+\textbf{Goals include:} 
+\begin{itemize}
+\item{Read paper for co-review by Tuesday. I don't remember exactly what we laid out for the rest, but basically comments for the week following, then I will write up the review and give it to you to adjust. Can you add the timeline we talked about?}
+\item{Exploring other topics is partially on the backburner. See my continuing goals.}
+\end{itemize}
+
+\subsection*{Goals continuing from last Meeting}
+\textbf{Goals include:} 
+\begin{itemize}
+\item{For data cleanup script, I need to go through the raw data files, and loading them into Rstudio. I would like to have this done by next week. The next step is that I need to pull out the important columns and combine sheets. This is also the stage where the relational database will come in because we have to include the seed count data.}
+\item{For the model, I will include post. pred. checks by next Thursday. I think I will probably not start the Growth model until after next week but a good place to start is visualizing the data and writing the most simple Stan Model (using the Poisson distribution). I will put a hopeful goal of this for Thursday, Nov. 1st.}
+\item{Edit Hertz application essays, and finish the personal information/experience side of the application. Due Dates: \begin{itemize}
+\item{Feedback on my essays = Oct 19th} 
+\item{Josh's Application = Oct 24th} 
+\item{Reference Letters = Oct 26th}
+\end{itemize}}
+\item{For continuing to develop my research ideas, I am doing the annotated bibliography and exploring other ideas. Both of these are relevant to the Core Course final proposal, as well as Science Day presentations, and partially the EvoDemo conference. The core course final proposal is my current deadline for having a mostly finished annotated bibliography of the main ideas that I want to research}
+\item{For the annotated bibliography, identify the key papers that I am working from, like the Angert papers, for next week. I think it would be good to develop a list of my key words as well.}
+\end{itemize}
+
+\section*{Oct. 11, 2018}
+
+\subsection*{Meeting Overview}
+
+We discussed our survival model with year effects, and briefly looked at the model output. We talked about starting to work with the raw data, and potentially starting to look at working on the growth model. We also talked about the EvoDemoSoc meeting, which would be really cool to attend.
+
+\subsection*{Goals for Next Meeting and Beyond}
+\textbf{Goals include:} 
+\begin{itemize}
+\item{Build script to clean up data}
+\item{Get year variance from model, and visualize posterior predictive checks}
+\item{Figure out my computer's Stan error}
+\item{Start to work on Growth (start with Poisson distribution) \tom{When you are ready for it, I can share an example of negative binomial growth modeling in Stan.}}
+\end{itemize}
+
+\subsection*{Goals continuing from last Meeting}
+\textbf{Goals include:} 
+\begin{itemize}
+\item{Work on Hertz application}
+\item{Work on annotated bibliography and continue to look at systems/logistics \tom{See comment on same point below}}
+\item{Brainstorm other research ideas: Reading about Geographic mosaic theory of coevolution for Tuesday, Oct. 16th}
+\end{itemize}
+
+
+\section*{Oct. 3, 2018}
+\tom{I made the notes below before pulling some of the more recent meeting notes - sorry. Some of these are not as relevant given your points above.}
+\subsection*{Meeting Overview}
+
+We discussed the Hertz Fellowship, predictions and next steps for the transplant experiment, as well as other possible research directions to explore.
+
+\subsection*{Goals for Next Meeting and Beyond \tom{Not clear which of goals below are near-term action items vs longer-term stuff.}}
+\textbf{Goals include:} 
+\begin{itemize}
+\item{Work on Hertz application} \tom{What does `work' mean? What do you need to do?}
+\item{Start on annotated bibliography and continue to look at systems/logistics \tom{How will you do this? What steps will you take?}}
+\item{Brainstorm other research ideas}
+\item{Work on Endodemog model with year effects and visualizing the model for Stan \tom{This is a good, concrete goal. We talked about posterior predictive checks and I think this should be included in your modeling work.}}
+\item{Work on Endodemog data cleaning script \tom{Again, what are the steps involved here and what is your timeline for completing them?}} 
+\item{\tom{Obviously, most of my suggestions here are about making your work - and your ability to hold yourself accountable - more explicit with dates and specific steps.}}
+\end{itemize}
+\end{document}
