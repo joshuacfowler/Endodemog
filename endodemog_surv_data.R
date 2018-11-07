@@ -95,11 +95,12 @@ View(pmerge)
 ## merging these measurements into one dataframe
 rsurv <- Poal_data_r %>%
   rename("Birth Year" = "Date") %>% 
+  mutate(survive10 = NA) %>% 
   melt(id.var = c("Tag", "Plot", "Endo", "Birth Year"),
-       measure.var = c("Survive11", "Survive12", "Survive13", "Survive14", 
+       measure.var = c("survive10", "Survive11", "Survive12", "Survive13", "Survive14", 
                        "Survive15", "Survive16"),
        value.name = "surv") 
-rsurv$year<- ifelse(rsurv$variable == "Survive11", 2011, ifelse(rsurv$variable  == "Survive12", 2012, ifelse(rsurv$variable  == "Survive13", 2013, ifelse(rsurv$variable  == "Survive14", 2014, ifelse(rsurv$variable  == "Survive15", 2015, ifelse(rsurv$variable  == "Survive16", 2016, NA))))))
+rsurv$year<- ifelse(rsurv$variable == "survive10", 2010, ifelse(rsurv$variable == "Survive11", 2011, ifelse(rsurv$variable  == "Survive12", 2012, ifelse(rsurv$variable  == "Survive13", 2013, ifelse(rsurv$variable  == "Survive14", 2014, ifelse(rsurv$variable  == "Survive15", 2015, ifelse(rsurv$variable  == "Survive16", 2016, NA)))))))
 # View(rsurv)
 
 rgrow <- Poal_data_r %>%
@@ -219,7 +220,59 @@ View(poldmerge)
 ## Combining data for recruits across years from the "Old" excel sheet
 ## recoding the values for year
 ## Merging these into one dataframe
+roldsurv <- Poal_data_old_r %>%
+  rename("Birth Year" = "Date") %>% 
+  mutate(survive09 = "NA") %>% 
+  melt(id.var = c("Tag", "Plot", "Endo", "Birth Year"),
+       measure.var = c("survive09", "Survive10", "Survive11", "Survive12", "Survive13", "Survive14", 
+                       "Survive15", "Survive16"),
+       value.name = "surv") 
+roldsurv$year<- ifelse(roldsurv$variable == "survive09", 2009, ifelse(roldsurv$variable == "Survive10", 2010, ifelse(roldsurv$variable == "Survive11", 2011, ifelse(roldsurv$variable  == "Survive12", 2012, ifelse(roldsurv$variable  == "Survive13", 2013, ifelse(roldsurv$variable  == "Survive14", 2014, ifelse(roldsurv$variable  == "Survive15", 2015, ifelse(roldsurv$variable  == "Survive16", 2016, NA))))))))
+View(roldsurv)
 
+roldgrow <- Poal_data_old_r %>%
+  rename("Birth Year" = "Date") %>% 
+  melt(id.var = c("Tag", "Plot", "Endo", "Birth Year"),
+       measure.var = c("TOTtiller09", "TOTtiller10","TOTtiller11", "TOTtiller12", 
+                       "TOTtiller13", "TOTtiller14", "TOTtiller15", 
+                       "TOTtiller16"),
+       value.name = "size") 
+roldgrow$year<- ifelse(roldgrow$variable == "TOTtiller09", 2009, ifelse(roldgrow$variable == "TOTtiller10", 2010, ifelse(roldgrow$variable == "TOTtiller11", 2011, ifelse(roldgrow$variable  == "TOTtiller12", 2012, ifelse(roldgrow$variable  == "TOTtiller13", 2013, ifelse(roldgrow$variable  == "TOTtiller14", 2014, ifelse(roldgrow$variable  == "TOTtiller15", 2015, ifelse(roldgrow$variable  == "TOTtiller16", 2016, NA))))))))
+# View(roldgrow)
+
+roldflw <- Poal_data_old_r %>%
+  rename("Birth Year" = "Date") %>% 
+  melt(id.var = c("Tag", "Plot", "Endo", "Birth Year"),
+       measure.var = c("FLWTiller09", "FLWtiller10","FLWtiller11", "FLWtiller12", 
+                       "FLWtiller13", "FLWtiller14", "FLWtiller15",
+                       "FLWtiller16"),
+       value.name = "flw") 
+roldflw$year<- ifelse(roldflw$variable == "FLWTiller09", 2009, ifelse(roldflw$variable == "FLWtiller10", 2010, ifelse(roldflw$variable == "FLWtiller11", 2011, ifelse(roldflw$variable  == "FLWtiller12", 2012, ifelse(roldflw$variable  == "FLWtiller13", 2013, ifelse(roldflw$variable  == "FLWtiller14", 2014, ifelse(roldflw$variable  == "FLWtiller15", 2015, ifelse(roldflw$variable  == "FLWtiller16", 2016, NA))))))))
+# View(roldflw)
+
+roldmerge_sg <- merge(roldsurv, roldgrow, by = c( "Tag", "Plot", "Endo", "Birth Year", "year"))
+# View(roldmerge_sg)
+
+roldmerge_sgf <- merge(roldmerge_sg, roldflw, by = c("Tag", "Plot", "Endo", "Birth Year", "year"))
+View(roldmerge_sgf)
+
+## getting a dataframe with time t and t_1
+roldmerge_t1 <-roldmerge_sgf %>%
+  rename(year_t1 = year, surv_t1 = surv, size_t1 = size, flw_t1 = flw) %>%  
+  mutate(year_t = year_t1 - 1)
+# View(roldmerge_t1)
+
+roldmerge_t <-roldmerge_sgf %>%
+  filter(year != max(year)) %>% 
+  rename(year_t = year, surv_t = surv, size_t = size, flw_t = flw) 
+# View(roldmerge_t)
+
+roldmerge <- roldmerge_t1 %>% 
+  full_join(roldmerge_t, by = c("Tag", "Plot", "Endo", "Birth Year", "year_t"),
+            all.x = all, all.y = all) %>% 
+  select(-contains("variable")) %>% 
+  mutate(origin = "R")
+View(roldmerge)
 
 
 
