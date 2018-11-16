@@ -2,7 +2,7 @@
 ## Survival kernel
 ## Tom makes a commit.
 
-setwd("~/Documents/R projects")
+
 library(tidyverse)
 library(rstan)
 library(StanHeaders)
@@ -61,11 +61,11 @@ set.seed(120)
 
 
 ## MCMC settings
-ni <- 100
-nb <- 10
-nc <- 1
+ni <- 5000
+nb <- 500
+nc <- 3
 ## actual values from data
-mean(surv_dat$surv_t1)
+mean(surv_dat1$surv_t1)
 
 
 ##Bernoulli model of the mean survival
@@ -122,29 +122,29 @@ dim(size_dat1)
 POAL_data_list <- list(surv_t1 = surv_dat1$surv_t1, logsize_t = size_dat1$logsize_t, N = as.integer(nrow(surv_dat1)))
 
 str(POAL_data_list)
-View(POAL_data_list)
+# View(POAL_data_list)
 ## GLM - Survival vs log(size)
 sink("endodemog_surv.stan")
 cat("
     data { 
     int<lower=0> N;                   // number of observations
     int<lower=0,upper=1> surv_t1[N];  // plant survival at time t+1 and target variable
-    matrix[N,1] logsize_t;        // log of plant size at time t
+    vector[N] logsize_t;        // log of plant size at time t
     }
     
     parameters {
     real alpha; // intercept
-    vector[1] beta;  // slope
+    real beta;  // slope
     }
 
     model {
-    //vector[N] mu;
+    vector[N] mu;
   
   //Priors
     alpha ~ normal(0,100);
     beta ~ normal(0,100);
-     // mu = alpha + logsize_t*beta;  // linear predictor
-      surv_t1 ~ bernoulli_logit(alpha + logsize_t*beta); // likelihood
+     mu = alpha + logsize_t*beta;  // linear predictor
+      surv_t1 ~ bernoulli_logit(mu); // likelihood
     
     }
     ",fill=T)
@@ -156,7 +156,7 @@ stanmodel <- stanc("endodemog_surv.stan")
 sm <- stan(file = "endodemog_surv.stan", data = POAL_data_list,
             iter = ni, warmup = nb, chains = nc)
 print(sm)
-
+plot(sm)
 ## save the stanfit object so that it can be 
 ## called later without rerunning the model
 saveRDS(sm, file = "endodemog_surv.rds")
