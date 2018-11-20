@@ -42,7 +42,8 @@ ELVI_data_r <- ELVI_data_r %>%
 # Read in data from ELRI
 ELRI_data <- read_xlsx("/Users/joshuacfowler/Dropbox/EndodemogData/rawdatafilesbyspecies/ELRI data up to 2016.xlsx", sheet = "ELRI")
 ELRI_data_r <- read_xlsx("/Users/joshuacfowler/Dropbox/EndodemogData/rawdatafilesbyspecies/ELRI data up to 2016.xlsx", sheet = "ELRI recruits")
-
+ELRI_data_r <- ELRI_data_r %>% 
+  mutate(tag = paste(PLOT, RecruitNo, sep = "-")) 
 # Read in data from AGPE
 AGPE_data <- read_xlsx("/Users/joshuacfowler/Dropbox/EndodemogData/rawdatafilesbyspecies/AGPE2016_final.xlsx", sheet = "AGPE")
 AGPE_data_r <- read_xlsx("/Users/joshuacfowler/Dropbox/EndodemogData/rawdatafilesbyspecies/AGPE2016_final.xlsx", sheet = "AGPE recruits")
@@ -1145,6 +1146,187 @@ ELVI <- elvi_merge %>%
   rbind(elvi_rmerge) %>% 
   mutate(species = "ELVI")
 View(ELVI)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Combining measurements across years for the ELRI data ------------------
+
+## Combining measurements across years for Surv, Growth, and Flowering using melt
+## Recoding those measurements for the year they are taken
+
+elrisurv <- ELRI_data %>%
+  rename("Birth Year" = "Planted Date", "plot" = "PLOT", "pos" = "POS", 
+         "tag" = "TAG", "Endo" = "ENDO") %>% 
+  mutate(Survive07 = NA) %>% 
+  melt(id.var = c("plot","pos", "tag", "Endo", "Loc'n", "Birth Year", 
+                  "TRT", "Plant"),
+       measure.var = c("Survive07", "survive08", "Survive09", "Survive10","Survive11",
+                       "Survive12", "Survive13", "Survive14", 
+                       "Survive15", "Survive16"),
+       value.name = "surv") 
+elrisurv$year<- ifelse(elrisurv$variable == "Survive07", 2007, ifelse(elrisurv$variable == "survive08", 2008, ifelse(elrisurv$variable  == "Survive09", 2009, ifelse(elrisurv$variable  == "Survive10", 2010, ifelse(elrisurv$variable  == "Survive11", 2011, ifelse(elrisurv$variable  == "Survive12", 2012, ifelse(elrisurv$variable  == "Survive13", 2013,ifelse(elrisurv$variable == "Survive14", 2014,ifelse(elrisurv$variable == "Survive15", 2015,ifelse(elrisurv$variable  == "Survive16", 2016, NA))))))))))
+# View(elrisurv)
+
+elrigrow <- ELRI_data %>% 
+  rename("Birth Year" = "Planted Date", "plot" = "PLOT", "pos" = "POS", 
+         "tag" = "TAG", "Endo" = "ENDO") %>%
+  melt(id.var = c("plot","pos", "tag", "Endo", "Loc'n", "Birth Year", 
+                  "TRT", "Plant"), 
+       measure.var = c("TotTillers07", "TotTillers08", "TotTillers09", "TotTillers10",
+                       "TotTiller11", "TotTiller12","TotTiller13", 
+                       "TotTiller14", "TotTiller15", "TotTillers16"), 
+       value.name = "size") 
+elrigrow$year<- ifelse(elrigrow$variable == "TotTillers07", 2007, ifelse(elrigrow$variable == "TotTillers08", 2008, ifelse(elrigrow$variable  == "TotTillers09", 2009, ifelse(elrigrow$variable  == "TotTillers10", 2010, ifelse(elrigrow$variable  == "TotTiller11", 2011, ifelse(elrigrow$variable  == "TotTiller12", 2012, ifelse(elrigrow$variable  == "TotTiller13", 2013, ifelse(elrigrow$variable == "TotTiller14", 2014, ifelse(elrigrow$variable == "TotTiller15", 2015, ifelse(elrigrow$variable  == "TotTillers16", 2016, NA))))))))))
+# View(elrigrow)
+
+elriflw <- ELRI_data %>% 
+  rename("Birth Year" = "Planted Date", "plot" = "PLOT", "pos" = "POS", 
+         "tag" = "TAG", "Endo" = "ENDO") %>%
+  mutate(FlwTillers1 = NA) %>% 
+  melt(id.var = c("plot","pos", "tag", "Endo", "Loc'n", "Birth Year", 
+                  "TRT", "Plant"), 
+       measure.var = c("FlwTillers08", "FlwTillers09", "FLwTillers10", 
+                       "FlwTiller11", "FlwTiller12", "FlwTiller13", 
+                       "FlwTiller14", "FlwTiller15", "FlwTillers16"), 
+       value.name = "flw") 
+elriflw$year<- ifelse(elriflw$variable == "FlwTillers08", 2008, ifelse(elriflw$variable  == "FlwTillers09", 2009, ifelse(elriflw$variable  == "FLwTillers10", 2010, ifelse(elriflw$variable  == "FlwTiller11", 2011, ifelse(elriflw$variable  == "FlwTiller12", 2012, ifelse(elriflw$variable  == "FlwTiller13", 2013,ifelse(elriflw$variable == "FlwTiller14", 2014,ifelse(elriflw$variable == "FlwTiller15", 2015,ifelse(elriflw$variable  == "FlwTillers16", 2016, NA)))))))))
+# View(elriflw)
+
+elri_merge_sg <- merge(elrisurv, elrigrow, by = c( "plot", "pos", "tag", "Endo", 
+                                                   "Loc'n", "Birth Year", "TRT",
+                                                   "Plant", "year"))
+# View(elri_merge_sg)
+
+elri_merge_sgf <- merge(elri_merge_sg, elriflw, by = c( "plot", "pos", "tag", "Endo", 
+                                                        "Loc'n", "Birth Year", "TRT",
+                                                        "Plant", "year"))
+# View(elri_merge_sgf)
+
+# getting a dataframe with t and t_1
+elri_merge_t1 <-elri_merge_sgf %>%
+  rename(year_t1 = year, surv_t1 = surv, size_t1 = size, flw_t1 = flw) %>%  
+  mutate(year_t = year_t1 - 1)
+# View(elri_merge_t1)
+
+elri_merge_t <-elri_merge_sgf %>%
+  filter(year != max(year)) %>% 
+  select(-surv) %>% 
+  rename(year_t = year, size_t = size, flw_t = flw) 
+# View(elri_merge_t)
+## merge and set origin, coded as 0 for original plants and 1 for recruits
+elri_merge <- elri_merge_t1 %>% 
+  full_join(elri_merge_t, by = c("plot", "pos", "tag", "Endo", 
+                                 "Loc'n", "Birth Year", "TRT",
+                                 "Plant", "year_t"), all.x = all, all.y = all) %>% 
+  select(-contains("variable")) %>% 
+  mutate(origin = 0) %>% 
+  mutate(`Birth Year` = year(`Birth Year`))
+# View(elri_merge)
+
+
+# Combining measurements across years for the ELRI recruits data ---------------
+
+
+## Combining measurements across years for the recruits data
+## recoding for the year of measurement
+## merging these measurements into one dataframe
+elri_rsurv <- ELRI_data_r %>%
+  rename("Birth Year" = "Date", "plot" = "PLOT", "pos" = "RecruitNo", "Endo" = "endo") %>%
+  melt(id.var = c("plot", "pos", "tag", "Endo", "Birth Year"),
+       measure.var = c("surv10", "surv11", "surv12", "Surv13", "Surv14", 
+                       "Surv15", "Survive16"),
+       value.name = "surv") 
+elri_rsurv$year<- ifelse(elri_rsurv$variable == "surv10", 2010, ifelse(elri_rsurv$variable == "surv11", 2011, ifelse(elri_rsurv$variable  == "surv12", 2012, ifelse(elri_rsurv$variable  == "Surv13", 2013, ifelse(elri_rsurv$variable  == "Surv14", 2014, ifelse(elri_rsurv$variable  == "Surv15", 2015, ifelse(elri_rsurv$variable == "Survive16", 2016, NA)))))))
+# View(elri_rsurv)
+
+elri_rgrow <- ELRI_data_r %>%
+  rename("Birth Year" = "Date", "plot" = "PLOT", "pos" = "RecruitNo", "Endo" = "endo") %>%
+  melt(id.var = c("plot", "pos", "tag", "Endo", "Birth Year"),
+       measure.var = c("TOTtiller09", "TOTtiller10","TOTtiller11", "TOTtiller12", 
+                       "TOT13", "TOT14", "TOT15", "TotTillers16"),
+       value.name = "size") 
+elri_rgrow$year<- ifelse(elri_rgrow$variable == "TOTtiller09", 2009, ifelse(elri_rgrow$variable == "TOTtiller10", 2010, ifelse(elri_rgrow$variable == "TOTtiller11", 2011, ifelse(elri_rgrow$variable  == "TOTtiller12", 2012, ifelse(elri_rgrow$variable  == "TOT13", 2013, ifelse(elri_rgrow$variable  == "TOT14", 2014, ifelse(elri_rgrow$variable  == "TOT15", 2015, ifelse(elri_rgrow$variable == "TotTillers16", 2016, NA))))))))
+# View(elri_rgrow)
+
+elri_rflw <- ELRI_data_r %>%
+  rename("Birth Year" = "Date", "plot" = "PLOT", "pos" = "RecruitNo", "Endo" = "endo") %>%
+  melt(id.var = c("plot", "pos", "tag", "Endo", "Birth Year"),
+       measure.var = c("FLWtiller09", "FLWtiller10","FLWtiller11", "FLWtiller12", 
+                       "FLW13", "FLW14", "FLW15", "FlwTillers16"),
+       value.name = "flw") 
+elri_rflw$year<- ifelse(elri_rflw$variable == "FLWtiller09", 2009, ifelse(elri_rflw$variable == "FLWtiller10", 2010, ifelse(elri_rflw$variable == "FLWtiller11", 2011, ifelse(elri_rflw$variable  == "FLWtiller12", 2012, ifelse(elri_rflw$variable  == "FLW13", 2013, ifelse(elri_rflw$variable  == "FLW14", 2014, ifelse(elri_rflw$variable  == "FLW15", 2015, ifelse(elri_rflw$variable  == "FlwTillers16", 2016, NA))))))))
+# View(elri_rflw)
+
+elri_rmerge_sg <- merge(elri_rsurv, elri_rgrow, by = c( "plot", "pos", "tag", "Endo", "Birth Year", "year"))
+# View(elri_rmerge_sg)
+
+elri_rmerge_sgf <- merge(elri_rmerge_sg, elri_rflw, by = c("plot", "pos", "tag", "Endo", "Birth Year", "year"))
+# View(elri_rmerge_sgf)
+
+## getting a dataframe with time t and t_1
+elri_rmerge_t1 <-elri_rmerge_sgf %>%
+  rename(year_t1 = year, surv_t1 = surv, size_t1 = size, flw_t1 = flw) %>%  
+  mutate(year_t = year_t1 - 1)
+# View(elri_rmerge_t1)
+
+elri_rmerge_t <-elri_rmerge_sgf %>%
+  filter(year != max(year)) %>% 
+  select(-surv) %>% 
+  rename(year_t = year, size_t = size, flw_t = flw) 
+# View(elri_rmerge_t)
+
+elri_rmerge <- elri_rmerge_t1 %>% 
+  full_join(elri_rmerge_t, by = c("plot", "pos", "tag", "Endo", "Birth Year", "year_t"),
+            all.x = all, all.y = all) %>% 
+  select(-contains("variable")) %>% 
+  mutate(origin = 1) %>% 
+  mutate(`Loc'n` = NA) %>% 
+  mutate(TRT = NA) %>% 
+  mutate(Plant = NA)
+# View(elri_rmerge)
+
+
+
+
+
+
+
+
+
+
+# Combining the  original and recruit ELRI dataframes ---------
+elri_merge <- elri_merge[c("plot", "pos", "tag", "Endo", "origin", "Loc'n", "Birth Year",
+                           "TRT", "Plant", "year_t1", "surv_t1", "size_t1", "flw_t1",
+                           "year_t", "size_t", "flw_t")]
+
+elri_rmerge <- elri_rmerge[c("plot", "pos", "tag", "Endo", "origin", "Loc'n", "Birth Year",
+                             "TRT", "Plant", "year_t1", "surv_t1", "size_t1", "flw_t1",
+                             "year_t", "size_t", "flw_t")]
+
+
+ELRI <- elri_merge %>% 
+  rbind(elri_rmerge) %>% 
+  mutate(species = "ELRI")
+View(ELRI)
+
+
+
+
+
+
 
 
 
