@@ -1,10 +1,8 @@
-## Authors: Josh and Tom
-## Purpose: Create a script that imports Endodemog data, perform all raw data manipulation,
-## and create an .RData object that can be loaded for analysis
-## Last update: 23 Oct 2018
-######################################################
-
+## Grass endophyte population model
+## Script for data clean up
+setwd("~/Documents/R projects")
 library(tidyverse)
+<<<<<<< HEAD
 library(reshape2)
 library(lubridate)
 library(readxl)
@@ -1352,3 +1350,16 @@ LTREB_endodemog <- data.frame(colnames("quad", "species", "origin", "plot", "pos
 
 
 
+=======
+library(rstan)
+library(StanHeaders)
+library(shinystan)
+library(bayesplot)
+library(devtools)
+LTREB_endodemog <- 
+  read.csv("~/Documents/R projects/LTREBendodemog/endo_demog_long.csv")
+
+View(LTREB_endodemog)
+str(LTREB_endodemog)
+dim(LTREB_endodemog)
+>>>>>>> 92e3a4d30db8bc4df7a7d6315422ba4a8dd9c6f9

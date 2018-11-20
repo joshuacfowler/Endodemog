@@ -2,7 +2,7 @@
 ## Survival kernel
 ## Tom makes a commit.
 
-
+setwd("~/Documents/R projects")
 library(tidyverse)
 library(rstan)
 library(StanHeaders)
@@ -19,15 +19,22 @@ POAL_data <- LTREB_endodemog %>%
 str(POAL_data)
 dim(POAL_data)
 #View(POAL_data)
-## recode endophyte status from 'plus' or 'minus' to 1 or 0
-POAL_data$endo[POAL_data$endo=='plus']<-as.numeric(1)
-POAL_data$endo[POAL_data$endo=='minus']<-as.numeric(0)
+
 ## create new column with log(size)
 POAL_data1 <- POAL_data %>% 
   mutate(size_t, logsize_t = log(size_t)) 
 
 str(POAL_data1)
 dim(POAL_data1)
+
+surv_dat1 <- POAL_data1 %>% 
+  filter(!is.na(surv_t1))
+size_dat1 <- POAL_data1 %>% 
+  filter(!is.na(logsize_t))
+
+dim(POAL_data1)
+dim(surv_dat1)
+dim(size_dat1)
 #View(POAL_data1)
 
 invlogit<-function(x){exp(x)/(1+exp(x))}
@@ -54,16 +61,15 @@ survival_model <- glm(surv_t1 ~ log(size_t), family = "binomial", data=POAL_data
 summary(survival_model)
 
 ## here is the Stan model ##
-Sys.setenv(USE_CXX14 = 1)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 set.seed(120)
 
 
 ## MCMC settings
-ni <- 5000
-nb <- 500
-nc <- 3
+ni <- 100
+nb <- 10
+nc <- 1
 ## actual values from data
 mean(surv_dat1$surv_t1)
 
@@ -96,7 +102,7 @@ stanmodel <- stanc("endodemog_surv_Bmom.stan")
 ## Call Stan from R
 surv_data_list <- list(surv_t1 = surv_dat1$surv_t1, N = nrow(surv_dat1))
 str(surv_data_list)
-Bmom <- stan(file = "endodemog_surv_Bmom.stan", data = surv_data_list,verbose=TRUE,
+Bmom <- stan(file = "endodemog_surv_Bmom.stan", data = surv_data_list,
             iter = ni, warmup = nb, chains = nc)
 
 
@@ -110,19 +116,12 @@ traceplot(Bmom)
 
 ## data for GLM
 
-surv_dat1 <- POAL_data1 %>% 
-  filter(!is.na(surv_t1))
-size_dat1 <- POAL_data1 %>% 
-  filter(!is.na(logsize_t))
-
-dim(POAL_data1)
-dim(surv_dat1)
-dim(size_dat1)
 
 POAL_data_list <- list(surv_t1 = surv_dat1$surv_t1, logsize_t = size_dat1$logsize_t, N = as.integer(nrow(surv_dat1)))
 
 str(POAL_data_list)
-# View(POAL_data_list)
+#View(POAL_data_list)
+
 ## GLM - Survival vs log(size)
 sink("endodemog_surv.stan")
 cat("
@@ -143,8 +142,8 @@ cat("
   //Priors
     alpha ~ normal(0,100);
     beta ~ normal(0,100);
-     mu = alpha + logsize_t*beta;  // linear predictor
-      surv_t1 ~ bernoulli_logit(mu); // likelihood
+    mu = alpha + logsize_t*beta;  // linear predictor
+    surv_t1 ~ bernoulli_logit(mu); // likelihood
     
     }
     ",fill=T)
@@ -156,7 +155,7 @@ stanmodel <- stanc("endodemog_surv.stan")
 sm <- stan(file = "endodemog_surv.stan", data = POAL_data_list,
             iter = ni, warmup = nb, chains = nc)
 print(sm)
-plot(sm)
+
 ## save the stanfit object so that it can be 
 ## called later without rerunning the model
 saveRDS(sm, file = "endodemog_surv.rds")
@@ -184,64 +183,4 @@ x_dummy <- seq(min((POAL_data1$size_t),na.rm=T),max((POAL_data1$logsize_t),na.rm
 plot(POAL_data$surv_t1 ~ log(POAL_data$size_t), xlab = "Size in year t", ylab = "Survival in year t+1")        
 points(surv_bin$mean_size, surv_bin$mean_surv, pch=16, cex=2)
 lines(x_dummy,invlogit(coef(posterior)[1]+coef(posterior)[2]*x_dummy),col="red",lwd=3)
-
-
-
-
-## In Progress... GLM - Survival vs log(size) with Origin and endophyte predictors
-sink("endodemog_surv_oe.stan")
-cat("
-    data { 
-    int<lower=0> N;                     // number of observations
-    int<lower=0,upper=1> surv_t1[N]; // plant survival at time t+1 and target variable
-    vector [N] logsize_t;            // log of plant size at time t
-    
-    }
-    
-    parameters {
-    real alpha; // intercept
-    real beta;  // slope
-    }
-    
-    model {
-    vector[N] mu;
-    for(n in 1:N)
-    mu = alpha + beta*logsize_t;  // linear predictor
-    //Priors
-    alpha ~ normal(0,100);
-    beta ~ normal(0,100);
-    
-    //Likelihood
-    surv_t1 ~ bernoulli_logit(mu);
-    }
-    ",fill=T)
-sink()
-
-stanmodel2 <- stanc("endodemog_surv_oe.stan")
-
-## Run the model by calling stan()
-sm2 <- stan(file = "endodemog_surv_oe.stan", data = POAL_data_list,
-                       iter = ni, warmup = nb, chains = nc)
-print(sm2)
-
-## save the stanfit object so that it can be 
-## called later without rerunning the model
-saveRDS(sm2, file = "endodemog_surv_oe.rds")
-sm2 <- readRDS(file = "endodemog_surv_oe.rds")
-
-
-## check convergence and posterior distributions
-plot(sm2)
-
-traceplot(sm2)
-
-posterior <- as.matrix(sm2)
-plot_title <- ggtitle("Posterior distributions",
-                      "with medians and 80% intervals")
-mcmc_areas(posterior,
-           pars = c("alpha", "beta"),
-           prob = 0.8) + plot_title
-
-shiny2 <- as.shinystan(sm2)
-launch_shinystan(shiny2)
 
