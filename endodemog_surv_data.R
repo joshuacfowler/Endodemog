@@ -1,8 +1,10 @@
-## Grass endophyte population model
-## Script for data clean up
-setwd("~/Documents/R projects")
+## Authors: Josh and Tom	## Grass endophyte population model
+## Purpose: Create a script that imports Endodemog data, perform all raw data manipulation,	
+## and create an .RData object that can be loaded for analysis	
+## Last Update: 11/21/2018
+######################################################
 library(tidyverse)
-<<<<<<< HEAD
+<<<<<<<<<HEAD
 library(reshape2)
 library(lubridate)
 library(readxl)
@@ -42,7 +44,7 @@ ELRI_data <- read_xlsx("/Users/joshuacfowler/Dropbox/EndodemogData/rawdatafilesb
 ELRI_data_r <- read_xlsx("/Users/joshuacfowler/Dropbox/EndodemogData/rawdatafilesbyspecies/ELRI data up to 2016.xlsx", sheet = "ELRI recruits")
 ELRI_data_r <- ELRI_data_r %>% 
   mutate(tag = paste(PLOT, RecruitNo, sep = "-")) 
-# Read in data from AGPE
+# Read in data from POSY
 AGPE_data <- read_xlsx("/Users/joshuacfowler/Dropbox/EndodemogData/rawdatafilesbyspecies/AGPE2016_final.xlsx", sheet = "AGPE")
 AGPE_data_r <- read_xlsx("/Users/joshuacfowler/Dropbox/EndodemogData/rawdatafilesbyspecies/AGPE2016_final.xlsx", sheet = "AGPE recruits")
 
@@ -356,6 +358,8 @@ POAL <- pmerge %>%
   rbind(roldmerge) %>% 
   rbind(rmerge) %>% 
   mutate(species = "POAL")
+POAL <- POAL[!(is.na(POAL$surv_t1)),]
+
 View(POAL)
 
 
@@ -665,6 +669,8 @@ POSY <- po_merge %>%
   rbind(po_roldmerge) %>% 
   rbind(po_rmerge) %>% 
   mutate(species = "POSY")
+POSY <- POSY[!(is.na(POSY$surv_t1)),]
+
 View(POSY)
 
 
@@ -827,6 +833,8 @@ l_rmerge <- l_rmerge[c("plot", "pos", "tag", "Endo", "origin", "Loc'n", "Birth Y
 LOAR <- l_merge %>% 
   rbind(l_rmerge) %>% 
   mutate(species = "LOAR")
+LOAR <- LOAR[!(is.na(LOAR$surv_t1)),]
+
 View(LOAR)
 
 
@@ -986,6 +994,25 @@ f_rmerge <- f_rmerge_t1 %>%
 
 
 
+
+
+
+# Combining the original and recruit FESU dataframes ----------------------
+f_merge <- f_merge[c("plot", "pos", "tag", "Endo", "origin", "Loc'n", "Birth Year",
+                     "TRT", "Plant", "year_t1", "surv_t1", "size_t1", "flw_t1",
+                     "year_t", "size_t", "flw_t")]
+
+f_rmerge <- f_rmerge[c("plot", "pos", "tag", "Endo", "origin", "Loc'n", "Birth Year",
+                       "TRT", "Plant", "year_t1", "surv_t1", "size_t1", "flw_t1",
+                       "year_t", "size_t", "flw_t")]
+
+FESU <- f_merge %>% 
+  rbind(f_rmerge) %>% 
+  mutate(species = "FESU")
+FESU <- FESU[!(is.na(FESU$surv_t1)),]
+
+View(FESU)
+
 # Combining measurements across years for the ELVI data ------------------
 
 ## Combining measurements across years for Surv, Growth, and Flowering using melt
@@ -1143,6 +1170,8 @@ elvi_rmerge <- elvi_rmerge[c("plot", "pos", "tag", "Endo", "origin", "Loc'n", "B
 ELVI <- elvi_merge %>% 
   rbind(elvi_rmerge) %>% 
   mutate(species = "ELVI")
+ELVI <- ELVI[!(is.na(ELVI$surv_t1)),]
+
 View(ELVI)
 
 
@@ -1318,6 +1347,8 @@ elri_rmerge <- elri_rmerge[c("plot", "pos", "tag", "Endo", "origin", "Loc'n", "B
 ELRI <- elri_merge %>% 
   rbind(elri_rmerge) %>% 
   mutate(species = "ELRI")
+ELRI <- ELRI[!(is.na(ELRI$surv_t1)),]
+
 View(ELRI)
 
 
@@ -1325,6 +1356,206 @@ View(ELRI)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Combining measurements across years for the AGPE data ------------------
+
+## Combining measurements across years for Surv, Growth, and Flowering using melt
+## Recoding those measurements for the year they are taken
+
+agpesurv <- AGPE_data %>%
+  rename("Birth Year" = "PlantedDate", "plot" = "PLOT", "pos" = "POS", 
+         "tag" = "TAG") %>% 
+  mutate(Survive07 = NA) %>% 
+  melt(id.var = c("plot","pos", "tag", "Endo", "Loc'n", "Birth Year", 
+                  "TRT", "Plant"),
+       measure.var = c("survive1", "survive2", "survive3","survive4",
+                       "survive5", "Survive6", "Survive7", 
+                       "Survive8", "Survive9"),
+       value.name = "surv") 
+agpesurv$year<- ifelse(agpesurv$variable == "survive1", 2008, ifelse(agpesurv$variable  == "survive2", 2009, ifelse(agpesurv$variable  == "survive3", 2010, ifelse(agpesurv$variable  == "survive4", 2011, ifelse(agpesurv$variable  == "survive5", 2012, ifelse(agpesurv$variable  == "Survive6", 2013,ifelse(agpesurv$variable == "Survive7", 2014,ifelse(agpesurv$variable == "Survive8", 2015,ifelse(agpesurv$variable  == "Survive9", 2016, NA)))))))))
+# View(agpesurv)
+
+agpegrow <- AGPE_data %>% 
+  rename("Birth Year" = "PlantedDate", "plot" = "PLOT", "pos" = "POS", 
+         "tag" = "TAG") %>%
+  melt(id.var = c("plot","pos", "tag", "Endo", "Loc'n", "Birth Year", 
+                  "TRT", "Plant"), 
+       measure.var = c("ToTillers07", "Tottillers1", "TotTillers2", 
+                       "TOTtiller3", "TOTtiller4", "TotTiller5", 
+                       "TotTillers6", "TotTillers7", "TotTillers8", 
+                       "TotTillers9"), 
+       value.name = "size") 
+agpegrow$year<- ifelse(agpegrow$variable == "ToTillers07", 2007, ifelse(agpegrow$variable == "TotTillers1", 201, ifelse(agpegrow$variable  == "TotTillers2", 2009, ifelse(agpegrow$variable  == "TOTtiller3", 2010, ifelse(agpegrow$variable  == "TOTtiller4", 2011, ifelse(agpegrow$variable  == "TotTiller5", 2012, ifelse(agpegrow$variable  == "TotTillers6", 2013, ifelse(agpegrow$variable == "TotTillers7", 2014, ifelse(agpegrow$variable == "TotTillers8", 2015, ifelse(agpegrow$variable  == "TotTillers9", 2016, NA))))))))))
+# View(agpegrow)
+
+agpeflw <- AGPE_data %>% 
+  rename("Birth Year" = "PlantedDate", "plot" = "PLOT", "pos" = "POS", 
+         "tag" = "TAG") %>%
+  mutate(FlwTillers1 = NA) %>% 
+  melt(id.var = c("plot","pos", "tag", "Endo", "Loc'n", "Birth Year", 
+                  "TRT", "Plant"), 
+       measure.var = c("FlwTillers1", "FlwTillers2", "FLWTiller3", 
+                       "FLWTiller4", "FlwTillers5", "FlwTillers6", 
+                       "FlwTillers7", "FlwTillers8", "FlwTillers9"), 
+       value.name = "flw") 
+agpeflw$year<- ifelse(agpeflw$variable == "FlwTillers1", 2008, ifelse(agpeflw$variable  == "FlwTillers2", 2009, ifelse(agpeflw$variable  == "FLWTiller3", 2010, ifelse(agpeflw$variable  == "FLWtiller4", 2011, ifelse(agpeflw$variable  == "FlwTillers5", 2012, ifelse(agpeflw$variable  == "FlwTillers6", 2013,ifelse(agpeflw$variable == "FlwTillers7", 2014,ifelse(agpeflw$variable == "FlwTillers8", 2015,ifelse(agpeflw$variable  == "FlwTillers9", 2016, NA)))))))))
+# View(agpeflw)
+
+agpe_merge_sg <- merge(agpesurv, agpegrow, by = c( "plot", "pos", "tag", "Endo", 
+                                                   "Loc'n", "Birth Year", "TRT",
+                                                   "Plant", "year"))
+# View(agpe_merge_sg)
+
+agpe_merge_sgf <- merge(agpe_merge_sg, agpeflw, by = c( "plot", "pos", "tag", "Endo", 
+                                                        "Loc'n", "Birth Year", "TRT",
+                                                        "Plant", "year"))
+# View(agpe_merge_sgf)
+
+# getting a dataframe with t and t_1
+agpe_merge_t1 <-agpe_merge_sgf %>%
+  rename(year_t1 = year, surv_t1 = surv, size_t1 = size, flw_t1 = flw) %>%  
+  mutate(year_t = year_t1 - 1)
+# View(agpe_merge_t1)
+
+agpe_merge_t <-agpe_merge_sgf %>%
+  filter(year != max(year)) %>% 
+  select(-surv) %>% 
+  rename(year_t = year, size_t = size, flw_t = flw) 
+# View(agpe_merge_t)
+## merge and set origin, coded as 0 for original plants and 1 for recruits
+agpe_merge <- agpe_merge_t1 %>% 
+  full_join(agpe_merge_t, by = c("plot", "pos", "tag", "Endo", 
+                                 "Loc'n", "Birth Year", "TRT",
+                                 "Plant", "year_t"), all.x = all, all.y = all) %>% 
+  select(-contains("variable")) %>% 
+  mutate(origin = 0) %>% 
+  mutate(`Birth Year` = year(`Birth Year`))
+# View(agpe_merge)
+
+
+# Combining measurements across years for the AGPE recruits data ---------------
+
+
+## Combining measurements across years for the recruits data
+## recoding for the year of measurement
+## merging these measurements into one dataframe
+agpe_rsurv <- AGPE_data_r %>%
+  rename("Birth Year" = "birth", "plot" = "Plot", 
+         "pos" = "RecruitNo", "Endo" = "endo", "tag" = "Tag") %>%
+  melt(id.var = c("plot", "pos", "tag", "Endo", "Birth Year"),
+       measure.var = c("Survive09", "Survive10", "Survive11", "Survive12", "Survive13", "Survive14", 
+                       "Survive15", "Survive16"),
+       value.name = "surv") 
+agpe_rsurv$year<- ifelse(agpe_rsurv$variable == "Survive09", 2009, ifelse(agpe_rsurv$variable == "Survive10", 2010, ifelse(agpe_rsurv$variable == "Survive11", 2011, ifelse(agpe_rsurv$variable  == "Survive12", 2012, ifelse(agpe_rsurv$variable  == "Survive13", 2013, ifelse(agpe_rsurv$variable  == "Survive14", 2014, ifelse(agpe_rsurv$variable  == "Survive15", 2015, ifelse(agpe_rsurv$variable == "Survive16", 2016, NA))))))))
+# View(agpe_rsurv)
+
+agpe_rgrow <- AGPE_data_r %>%
+  rename("Birth Year" = "birth", "plot" = "Plot", 
+         "pos" = "RecruitNo", "Endo" = "endo", "tag" = "Tag") %>%
+  melt(id.var = c("plot", "pos", "tag", "Endo", "Birth Year"),
+       measure.var = c("TotTillers09", "TotTillers10","TotTillers11", "TotTiller12", 
+                       "TotTillers13", "TotTillers14", "TotTillers15", "TotTillers16"),
+       value.name = "size") 
+agpe_rgrow$year<- ifelse(agpe_rgrow$variable == "TotTillers09", 2009, ifelse(agpe_rgrow$variable == "TotTillers10", 2010, ifelse(agpe_rgrow$variable == "TotTillers11", 2011, ifelse(agpe_rgrow$variable  == "TotTiller12", 2012, ifelse(agpe_rgrow$variable  == "TotTillers13", 2013, ifelse(agpe_rgrow$variable  == "TotTillers14", 2014, ifelse(agpe_rgrow$variable  == "TotTillers15", 2015, ifelse(agpe_rgrow$variable == "TotTillers16", 2016, NA))))))))
+# View(agpe_rgrow)
+
+agpe_rflw <- AGPE_data_r %>%
+  rename("Birth Year" = "birth", "plot" = "Plot", 
+         "pos" = "RecruitNo", "Endo" = "endo", "tag" = "Tag") %>%
+  melt(id.var = c("plot", "pos", "tag", "Endo", "Birth Year"),
+       measure.var = c("FlwTillers09", "FlwTillers10","FlwTillers11", "FlwTillers12", 
+                       "FlwTillers13", "FlwTillers14", "FlwTillers15", "FlwTillers16"),
+       value.name = "flw") 
+agpe_rflw$year<- ifelse(agpe_rflw$variable == "FlwTillers09", 2009, ifelse(agpe_rflw$variable == "FlwTillers10", 2010, ifelse(agpe_rflw$variable == "FlwTillers11", 2011, ifelse(agpe_rflw$variable  == "FlwTillers12", 2012, ifelse(agpe_rflw$variable  == "FlwTillers13", 2013, ifelse(agpe_rflw$variable  == "FlwTillers14", 2014, ifelse(agpe_rflw$variable  == "FlwTillers15", 2015, ifelse(agpe_rflw$variable  == "FlwTillers16", 2016, NA))))))))
+# View(agpe_rflw)
+
+agpe_rmerge_sg <- merge(agpe_rsurv, agpe_rgrow, by = c( "plot", "pos", "tag", "Endo", "Birth Year", "year"))
+# View(agpe_rmerge_sg)
+
+agpe_rmerge_sgf <- merge(agpe_rmerge_sg, agpe_rflw, by = c("plot", "pos", "tag", "Endo", "Birth Year", "year"))
+# View(agpe_rmerge_sgf)
+
+## getting a dataframe with time t and t_1
+agpe_rmerge_t1 <-agpe_rmerge_sgf %>%
+  rename(year_t1 = year, surv_t1 = surv, size_t1 = size, flw_t1 = flw) %>%  
+  mutate(year_t = year_t1 - 1)
+# View(agpe_rmerge_t1)
+
+agpe_rmerge_t <-agpe_rmerge_sgf %>%
+  filter(year != max(year)) %>% 
+  select(-surv) %>% 
+  rename(year_t = year, size_t = size, flw_t = flw) 
+# View(agpe_rmerge_t)
+
+agpe_rmerge <- agpe_rmerge_t1 %>% 
+  full_join(agpe_rmerge_t, by = c("plot", "pos", "tag", "Endo", "Birth Year", "year_t"),
+            all.x = all, all.y = all) %>% 
+  select(-contains("variable")) %>% 
+  mutate(origin = 1) %>% 
+  mutate(`Loc'n` = NA) %>% 
+  mutate(TRT = NA) %>% 
+  mutate(Plant = NA)
+# View(agpe_rmerge)
+
+
+
+
+
+
+
+
+
+
+# Combining the  original and recruit AGPE dataframes ---------
+agpe_merge <- agpe_merge[c("plot", "pos", "tag", "Endo", "origin", "Loc'n", "Birth Year",
+                           "TRT", "Plant", "year_t1", "surv_t1", "size_t1", "flw_t1",
+                           "year_t", "size_t", "flw_t")]
+
+agpe_rmerge <- agpe_rmerge[c("plot", "pos", "tag", "Endo", "origin", "Loc'n", "Birth Year",
+                             "TRT", "Plant", "year_t1", "surv_t1", "size_t1", "flw_t1",
+                             "year_t", "size_t", "flw_t")]
+
+
+AGPE <- agpe_merge %>% 
+  rbind(agpe_rmerge) %>% 
+  mutate(species = "AGPE")
+AGPE <- AGPE[!(is.na(AGPE$surv_t1)),]
+View(AGPE)
+
+
+
+# Combining all of the species dataframes, without the 2017 data which is in endo_demog_long ----------
+
+LTREB_endodemog <- POSY %>% 
+  rbind(LOAR) %>% 
+  rbind(ELVI) %>% 
+  rbind(ELRI) %>% 
+  rbind(FESU) %>% 
+  rbind(POAL) %>% 
+  rbind(POSY) 
+
+View(LTREB_endodemog)
+
+str(LTREB_endodemog)
+
+unique(LTREB_endodemog$size_t)
+unique(LTREB_endodemog$size_t1)
+unique(LTREB_endodemog$flw_t)
+unique(LTREB_endodemog$flw_t1)
 
 
 
