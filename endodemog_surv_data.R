@@ -1539,19 +1539,18 @@ View(AGPE)
 
 
 # Combining all of the species dataframes, without the 2017 data which is in endo_demog_long ----------
-
-LTREB_endodemog <- POSY %>% 
+# There are still some oddities in this set. For example: The surv_t1 column has 0,1,Na, 1? 0? and XX as entries
+LTREB_endodemog <- AGPE %>% 
   rbind(LOAR) %>% 
   rbind(ELVI) %>% 
   rbind(ELRI) %>% 
   rbind(FESU) %>% 
-  rbind(POAL) %>% 
-  rbind(POSY) 
-
+  rbind(POAL) %>%  
+  rbind(POSY)
 View(LTREB_endodemog)
 
 str(LTREB_endodemog)
-
+unique(LTREB_endodemog$surv_t1)
 unique(LTREB_endodemog$size_t)
 unique(LTREB_endodemog$size_t1)
 unique(LTREB_endodemog$flw_t)
@@ -1567,8 +1566,35 @@ unique(LTREB_endodemog$flw_t1)
 
 
 
+# Pulling out the 2017 data from endo_demog_long --------------------------
+
+endo_demog_long<- read.csv("/Users/joshuacfowler/Dropbox/EndodemogData/Fulldataplusmetadata/endo_demog_long.csv")
+View(endo_demog_long)
+
+endo2017 <- endo_demog_long %>% 
+  rename("tag" = "id", "Endo" = "endo", "Loc'n" = "quad", 
+         "Birth Year" = "birth" ) %>% 
+  mutate(TRT = NA) %>% 
+  mutate(Plant = NA) %>% 
+  select("plot", "pos", "tag", "Endo", "origin", "Loc'n", "Birth Year",
+         "TRT", "Plant", "year_t1", "surv_t1", "size_t1", "flw_t1",
+         "year_t", "size_t") %>% 
+  filter(year_t1 == "2017")
+
+endo2017$Endo <- ifelse(endo2017$Endo == "plus", 1, ifelse(endo2017$Endo == "minus", 0, NA))
+endo2017$origin <- ifelse(endo2017$origin == "O", 0, ifelse(endo2017$origin == "R", 1, NA))
+  
+endo2017<- endo2017[c("plot", "pos", "tag", "Endo", "origin", "Loc'n", "Birth Year",
+                                     "TRT", "Plant", "year_t1", "surv_t1", "size_t1", "flw_t1",
+                                     "year_t", "size_t", "flw_t")]
+
+View(endo2017)
 
 
+# Combing the 2017 data with the multi species data frame.
+
+LTREB_endodemog <- LTREB_endodemog %>% 
+  rbind(endo2017)
 
 # Pulling out the seed production estimates -------------------------------
 
