@@ -1,7 +1,7 @@
 ## Authors: Josh and Tom	## Grass endophyte population model
 ## Purpose: Create a script that imports Endodemog data, perform all raw data manipulation,	
 ## and create an .RData object that can be loaded for analysis	
-## Last Update: 11/23/2018
+## Last Update: 11/28/2018
 ######################################################
 library(tidyverse)
 <<<<<<<<<HEAD
@@ -1547,14 +1547,9 @@ LTREB_endodemog <- AGPE %>%
   rbind(FESU) %>% 
   rbind(POAL) %>%  
   rbind(POSY)
-View(LTREB_endodemog)
+# View(LTREB_endodemog)
 
-str(LTREB_endodemog)
-unique(LTREB_endodemog$surv_t1)
-unique(LTREB_endodemog$size_t)
-unique(LTREB_endodemog$size_t1)
-unique(LTREB_endodemog$flw_t)
-unique(LTREB_endodemog$flw_t1)
+
 
 
 
@@ -1584,17 +1579,57 @@ endo2017 <- endo_demog_long %>%
 endo2017$Endo <- ifelse(endo2017$Endo == "plus", 1, ifelse(endo2017$Endo == "minus", 0, NA))
 endo2017$origin <- ifelse(endo2017$origin == "O", 0, ifelse(endo2017$origin == "R", 1, NA))
   
-endo2017<- endo2017[c("plot", "pos", "tag", "Endo", "origin", "Loc'n", "Birth Year",
-                                     "TRT", "Plant", "year_t1", "surv_t1", "size_t1", "flw_t1",
-                                     "year_t", "size_t", "flw_t")]
+endo2017<- endo2017[c("plot", "pos", "tag", "Endo", "origin",  "Birth Year",
+                      "TRT", "Plant", "year_t1", "surv_t1", "size_t1", "flw_t1",
+                      "year_t", "size_t")]
 
 View(endo2017)
 
 
-# Combing the 2017 data with the multi species data frame.
+# Combining the 2017 data with the multi species data frame.
 
 LTREB_endodemog <- LTREB_endodemog %>% 
+  select("plot", "pos", "tag", "Endo", "origin",  "Birth Year",
+         "TRT", "Plant", "year_t1", "surv_t1", "size_t1", "flw_t1",
+         "year_t", "size_t") %>% 
   rbind(endo2017)
+View(LTREB_endodemog)
+
+# Now we can check for funky, out of place values
+str(LTREB_endodemog)
+unique(LTREB_endodemog$`Birth Year`)
+unique(LTREB_endodemog$surv_t1)
+unique(LTREB_endodemog$size_t)
+unique(LTREB_endodemog$size_t1)
+unique(LTREB_endodemog$flw_t1)
+
+
+
+# There is are survival values with `?` and `XX`. 
+# Reassign the surv_t1 columns to be numeric
+LTREB_endodemog[which(LTREB_endodemog$surv_t1 == "XX"),] 
+LTREB_endodemog$surv_t1 <- as.numeric(as.character(LTREB_endodemog$surv_t1))
+
+LTREB_endodemog %>% 
+  filter(surv_t1 == "XX")
+LTREB_endodemog %>% 
+  filter(grepl("0?", surv_t1))
+
+
+# reassign the Birth Year column to be numeric
+LTREB_endodemog$`Birth Year` <- as.numeric(as.character(LTREB_endodemog$`Birth Year`))
+
+
+# There is a non-integer value for size, 5.5. 
+# This is labelled in the data as an avg. between two years because the plant was not found in 2012, but was found in 2011 and 2013. I'm leaving it as is for now.
+# Reassign the size columns to be numeric
+LTREB_endodemog[which(LTREB_endodemog$size_t1 == 5.5),] 
+LTREB_endodemog$size_t1 <- as.numeric(as.character(LTREB_endodemog$size_t1))
+LTREB_endodemog$size_t <- as.numeric(as.character(LTREB_endodemog$size_t1))
+
+
+
+str(LTREB_endodemog)
 
 
 
@@ -1669,3 +1704,4 @@ View(LTREB_endodemog)
 str(LTREB_endodemog)
 dim(LTREB_endodemog)
 >>>>>>> 92e3a4d30db8bc4df7a7d6315422ba4a8dd9c6f9
+
