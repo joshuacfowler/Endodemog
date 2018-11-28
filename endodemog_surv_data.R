@@ -1,7 +1,7 @@
 ## Authors: Josh and Tom	## Grass endophyte population model
 ## Purpose: Create a script that imports Endodemog data, perform all raw data manipulation,	
 ## and create an .RData object that can be loaded for analysis	
-## Last Update: 11/21/2018
+## Last Update: 11/23/2018
 ######################################################
 library(tidyverse)
 <<<<<<<<<HEAD
@@ -99,7 +99,7 @@ pflw$year<- ifelse(pflw$variable == "Flwtillers1", 2008, ifelse(pflw$variable  =
 pmerge_sg <- merge(psurv, pgrow, by = c( "plot", "pos", "tag", "Endo", 
                                               "Loc'n", "Birth Year", "TRT",
                                               "Plant", "year"))
-# View(pmerge_sg)
+View(pmerge_sg)
 
 pmerge_sgf <- merge(pmerge_sg, pflw, by = c( "plot", "pos", "tag", "Endo", 
                                              "Loc'n", "Birth Year", "TRT",
@@ -1596,11 +1596,60 @@ View(endo2017)
 LTREB_endodemog <- LTREB_endodemog %>% 
   rbind(endo2017)
 
-# Pulling out the seed production estimates -------------------------------
 
-# Pulling out the seed production estimates
+
+# Pulling out the seed production estimates. These are not measured for all plants, and so will go into a separate dataframe------------------------------
+# Pulling out the seed production estimates for the "New" POAL data --------
 pseed <- POAL_data %>% 
-  select()
+  rename("Birth Year" = "Planted Date") %>% 
+  melt(id.var = c("plot","pos", "tag", "Endo", "Loc'n", "Birth Year", 
+                  "TRT", "Plant"),
+       measure.var = c("seeds_InflA2", "seeds_InflB2"),
+       value.name = "seed") %>% 
+  mutate(tillerid = case_when(grepl("A", variable) ~ "A", 
+                              grepl("B",variable) ~ "B"))
+
+pseed$year<- ifelse(pseed$variable == "seeds_InflA2", 2009, ifelse(pseed$variable  == "seeds_InflB2", 2009, ifelse(pseed$variable  == "seedive3", 2010, ifelse(pseed$variable  == "seedive4", 2011, ifelse(pseed$variable  == "seedive5", 2012, ifelse(pseed$variable  == "seedive6", 2013,ifelse(pseed$variable == "seedive7", 2014,ifelse(pseed$variable == "seedive8", 2015,ifelse(pseed$variable  == "seedive9", 2016, NA)))))))))
+
+
+# View(pseed)
+
+pspike <- POAL_data %>% 
+  rename("Birth Year" = "Planted Date") %>% 
+  melt(id.var = c("plot","pos", "tag", "Endo", "Loc'n", "Birth Year", 
+                  "TRT", "Plant"),
+       measure.var = c("spikelets_InflA2", "spikelets_InflB2", "spikelets_inflA3", 
+                       "spikelets_inflB3", "spikelets_inflC3", "spikelets_inflA4",
+                       "spikelets_inflA5", "spikelets_inflA6", "spikelets_InflB6", 
+                       "spikelets_inflC6", "spikelets_inflA7", "spikelets_InflB7", 
+                       "spikelets_inflC7","spikelets_inflA8", "spikelets_InflB8", 
+                       "spikelets_inflC8","spikelets_inflA9", "spikelets_InflB9", 
+                       "spikelets_inflC9"),
+       value.name = "spikelets") %>% 
+  mutate(tillerid = case_when(grepl("A", variable) ~ "A", 
+                              grepl("B", variable) ~ "B",
+                              grepl("C", variable) ~ "C"))
+pspike$year<- ifelse(pspike$variable == "spikelets_InflA2", 2009, ifelse(pspike$variable  == "spikelets_InflB2", 2009, ifelse(pspike$variable  == "spikelets_inflA3", 2010, ifelse(pspike$variable  == "spikelets_inflB3", 2010, ifelse(pspike$variable  == "spikelets_inflB3", 2010, ifelse(pspike$variable  == "spikelets_inflA4", 2011,ifelse(pspike$variable == "spikelets_infA5", 2012,ifelse(pspike$variable == "spikelets_inflA6", 2013, ifelse(pspike$variable == "spikelets_InflB6", 2013, ifelse(pspike$variable == "spikelets_inflC6", 2013, ifelse(pspike$variable  == "spikelets_inflA7", 2014, ifelse(pspike$variable == "spikelets_InflB7", 2014, ifelse(pspike$variable == "spikelets_inflC7", 2014, ifelse(pspike$variable == "spikelets_inflA8", 2015, ifelse(pspike$variable == "spikelets_InflB8", 2015, ifelse(pspike$variable ==   "spikelets_inflC8", 2015, ifelse(pspike$variable == "spikelets_inflA9", 2016, ifelse(pspike$variable == "spikelets_InflB9", 2016, ifelse(pspike$variable == "spikelets_inflC9", 2016, NA)))))))))))))))))))
+# View(pspike)
+
+# We already have the FlwTiller data within pflw dataframe
+# View(pflw)
+
+pseedmerge_ss <- merge(pseed, pspike, by = c( "plot", "pos", "tag", "Endo", 
+                                         "Loc'n", "Birth Year", "TRT",
+                                         "Plant", "year", "tillerid"))
+# View(pseedmerge_ss)
+
+pseedmerge_ssf <- merge(pseedmerge_ss, pflw, by = c("plot", "pos", "tag",'Endo', 
+                                                   "Loc'n", "Birth Year", "TRT", 
+                                                   "Plant", "year"), all = TRUE)
+View(pseedmerge_ssf)
+
+
+
+
+
+
 
 # What we want our final data frame to look like
 LTREB_endodemog <- data.frame(colnames("quad", "species", "origin", "plot", "pos", "id", "surv_t1", "size_t1", "seed_t1", "flower_t1", "size_t", "endo", "birth", "year_t", "year_t1"))
