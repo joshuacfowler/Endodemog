@@ -6,9 +6,9 @@
 \title{Meeting Updates}
 \author{Joshua Fowler}
 
-\usepackage{Sweave}
+%\usepackage{Sweave}
 \begin{document}
-\input{MeetingUpdates-concordance}
+%\input{MeetingUpdates-concordance}
 %\SweaveOpts{concordance=TRUE}
   \maketitle
   Tom's comments are in \tom{WildStrawberry}.
@@ -19,11 +19,11 @@ Overall, we decided to work on the three vital rate models for survival, growth,
 
 \subsection*{Schedule:}
 \begin{itemize}
-\item{Dec 21: I want to have a functioning version of the survival model at this point. We talked during our last meeting about how to add in the endo effect to be able to analyze the variance. I will work on incorporating this as a term within the year random effect. }
-\item{Dec 24: Finish the Flower model. This should be pretty similar to the Survival model. I will also start looking at model diagnostics and think about visualizing the data once the models are running.} 
-\item{Dec 28: Finish the Growth model. This is different from the other two in that it will require a negative binomial distribution.}
+\item{Dec 21: I want to have a functioning version of the survival model at this point. We talked during our last meeting about how to add in the endo effect to be able to analyze the variance. I will work on incorporating this as a term within the year random effect. \tom{I think there are two ways of doing this. The way that we wrote out would have E+ and E- plants having different temporal distributions on the intercept values. A second way would be to put a temporal distribution on an endophyte effect parameter. These would be equivalent models that use a different parameterization, essentially a `mean parameterization' versus an `effect parameterization'. For now, proceed with whatever makes the most sense to you and we can discuss.}}
+\item{Dec 24: Finish the Flower model. This should be pretty similar to the Survival model. I will also start looking at model diagnostics and think about visualizing the data once the models are running.\tom{Yes, flowering will be easy once you do survival.}} 
+\item{Dec 28: Finish the Growth model. This is different from the other two in that it will require a negative binomial distribution.\tom{Yes, there are several ways to parameterize a NB. The easiest (and hackiest) way to do this would be to use a Poisson model but add an individual-level random effect. This basically adds overdispersion, which allows the Poisson to approximate the NB. Also remember that this will need to be zero-truncated. This is easy to do in BUGS, not sure about Stan (google it).}}
 \item{Dec 29 - Jan 4: Run the models, and save the outputs. During this, time, I will also finish up model diagnostics and figures.}
-\item{Jan 6th: Back at Rice}
+\item{Jan 6th: Back at Rice\tom{Let's schedule a meeting first thing when you are back, so you can show me what should basically be all the raw materials for your poster.}}
 \item{Jan7-8th: Print poster}
 \item{Jan 9th: Travel to Miami}
 \end{itemize}
