@@ -11,7 +11,7 @@ library(bayesplot)
 library(devtools)
 LTREB_endodemog <- 
   read.csv("~/Documents/R projects/LTREBendodemog/endo_demog_long.csv")
-#View(LTREB_endodemog)
+# View(LTREB_endodemog)
 str(LTREB_endodemog)
 dim(LTREB_endodemog)
 POAL_data <- LTREB_endodemog %>% 
@@ -27,9 +27,15 @@ POAL_data1 <- POAL_data %>%
 str(POAL_data1)
 dim(POAL_data1)
 
-surv_dat1 <- POAL_data1 %>% 
+surv_dat1 <- c(na.omit(POAL_data1$surv_t1))
+size_dat1 <- c(na.omit(POAL_data1$logsize_t))
+year_dat1 <- c(na.omit(POAL_data1$year_t))
+
+# surv_dat1 <- POAL_data1 %>% 
+  select(surv_t1) %>% 
   filter(!is.na(surv_t1))
-size_dat1 <- POAL_data1 %>% 
+# size_dat1 <- POAL_data1 %>% 
+  select(logsize_t) %>% 
   filter(!is.na(logsize_t))
 
 dim(POAL_data1)
@@ -72,6 +78,7 @@ nb <- 10
 nc <- 1
 ## actual values from data
 mean(surv_dat1$surv_t1)
+mean(surv_dat1)
 
 
 ##Bernoulli model of the mean survival
@@ -79,7 +86,7 @@ sink("endodemog_surv_Bmom.stan")
 cat("
     data { 
     int<lower=0> N; // number of observations
-    int<lower=0,upper=1> surv_t1[N]; // plant survival at time t+1
+    int surv_t1[N]; // plant survival at time t+1
     }
     
     parameters {
@@ -100,7 +107,7 @@ sink()
 
 stanmodel <- stanc("endodemog_surv_Bmom.stan")
 ## Call Stan from R
-surv_data_list <- list(surv_t1 = surv_dat1$surv_t1, N = nrow(surv_dat1))
+surv_data_list <- list(surv_t1 = surv_dat1, N = 3241)
 str(surv_data_list)
 Bmom <- stan(file = "endodemog_surv_Bmom.stan", data = surv_data_list,
             iter = ni, warmup = nb, chains = nc)
@@ -117,7 +124,7 @@ traceplot(Bmom)
 ## data for GLM
 
 
-POAL_data_list <- list(surv_t1 = surv_dat1$surv_t1, logsize_t = size_dat1$logsize_t, N = as.integer(nrow(surv_dat1)))
+POAL_data_list <- list(surv_t1 = surv_dat1, logsize_t = size_dat1, N = as.integer(3241), K = as.integer(1))
 
 str(POAL_data_list)
 #View(POAL_data_list)
@@ -127,24 +134,28 @@ sink("endodemog_surv.stan")
 cat("
     data { 
     int<lower=0> N;                   // number of observations
-    int<lower=0,upper=1> surv_t1[N];  // plant survival at time t+1 and target variable
-    vector[N] logsize_t;        // log of plant size at time t
+    //int<lower=0> K;    // number of predictors
+    int surv_t1[N];  // plant survival at time t+1 and target variable
+    real logsize_t[N];        // log of plant size at time t
     }
     
     parameters {
-    real alpha; // intercept
-    real beta;  // slope
+    real alpha; //fixed intercept
+    real beta; // fixed slope 
+    real eta;
     }
 
     model {
     vector[N] mu;
-  
   //Priors
-    alpha ~ normal(0,100);
-    beta ~ normal(0,100);
-    mu = alpha + logsize_t*beta;  // linear predictor
-    surv_t1 ~ bernoulli_logit(mu); // likelihood
-    
+    alpha ~ normal(0,10);
+    beta ~ normal(0,10);
+    eta ~ normal(0,1);
+  //Likelihood
+  for(n in 1:N){
+    mu[n] = alpha + beta*logsize_t[n]; // linear predictor
+    surv_t1[n] ~ binomial_logit(mu, eta); // likelihood
+    }
     }
     ",fill=T)
 sink()

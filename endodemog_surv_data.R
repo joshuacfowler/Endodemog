@@ -1564,7 +1564,7 @@ LTREB_endodemog <- AGPE %>%
 # Pulling out the 2017 data from endo_demog_long --------------------------
 
 endo_demog_long<- read.csv("/Users/joshuacfowler/Dropbox/EndodemogData/Fulldataplusmetadata/endo_demog_long.csv")
-View(endo_demog_long)
+# View(endo_demog_long)
 
 endo2017 <- endo_demog_long %>% 
   rename("tag" = "id", "Endo" = "endo", "Loc'n" = "quad", 
@@ -1583,7 +1583,7 @@ endo2017<- endo2017[c("plot", "pos", "tag", "Endo", "origin",  "Birth Year",
                       "TRT", "Plant", "year_t1", "surv_t1", "size_t1", "flw_t1",
                       "year_t", "size_t")]
 
-View(endo2017)
+# View(endo2017)
 
 
 # Combining the 2017 data with the multi species data frame.
@@ -1593,7 +1593,7 @@ LTREB_endodemog <- LTREB_endodemog %>%
          "TRT", "Plant", "year_t1", "surv_t1", "size_t1", "flw_t1",
          "year_t", "size_t") %>% 
   rbind(endo2017)
-View(LTREB_endodemog)
+# View(LTREB_endodemog)
 
 # Now we can check for funky, out of place values
 str(LTREB_endodemog)
@@ -1608,13 +1608,13 @@ unique(LTREB_endodemog$flw_t1)
 # There is are survival values with `?` and `XX`. 
 # Reassign the surv_t1 columns to be numeric
 LTREB_endodemog[which(LTREB_endodemog$surv_t1 == "XX"),] 
-LTREB_endodemog$surv_t1 <- as.numeric(as.character(LTREB_endodemog$surv_t1))
 
 LTREB_endodemog %>% 
   filter(surv_t1 == "XX")
 LTREB_endodemog %>% 
-  filter(grepl("0?", surv_t1))
-
+  filter(grepl("?", surv_t1))
+LTREB_endodemog$surv_t1 <- as.numeric(as.character(LTREB_endodemog$surv_t1))
+str(LTREB_endodemog)
 
 # reassign the Birth Year column to be numeric
 LTREB_endodemog$`Birth Year` <- as.numeric(as.character(LTREB_endodemog$`Birth Year`))
@@ -1622,11 +1622,15 @@ LTREB_endodemog$`Birth Year` <- as.numeric(as.character(LTREB_endodemog$`Birth Y
 
 # There is a non-integer value for size, 5.5. 
 # This is labelled in the data as an avg. between two years because the plant was not found in 2012, but was found in 2011 and 2013. I'm leaving it as is for now.
+
 # Reassign the size columns to be numeric
 LTREB_endodemog[which(LTREB_endodemog$size_t1 == 5.5),] 
 LTREB_endodemog$size_t1 <- as.numeric(as.character(LTREB_endodemog$size_t1))
 LTREB_endodemog$size_t <- as.numeric(as.character(LTREB_endodemog$size_t1))
 
+# There is a value for flower tillers of "check tag".
+# Reassign the flw_t1 column to be numeric
+LTREB_endodemog[which(LTREB_endodemog$flw_t1 == "which tag")]
 
 
 str(LTREB_endodemog)
