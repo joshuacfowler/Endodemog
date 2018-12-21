@@ -37,14 +37,12 @@ logit = function(x) { log(x/(1-x)) }
 
 ## here is the Stan model ##
 ## run this to optimize computer system settings
-Sys.setenv(USE_CXX14 = 1)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 set.seed(123)
 
 ## MCMC settings
 ni <- 200
-nt <- 1
 nb <- 100
 nc <- 1
 
@@ -103,17 +101,20 @@ cat("
     
     model {
     vector[N] mu;
-    // Priors
-    beta ~ normal(0,100;      // prior for slope
-    beta_year ~ normal(0,100);   // prior for year random effects
-    // Linear Predictor
+   
+       // Linear Predictor
     for(n in 1:N){
        mu[n] = beta[1] + beta_year[year_t[n]] + beta[2]*logsize_t[n];
-    // Likelihood
-      surv_t1[n] ~ bernoulli_logit(mu);
     }
+    // Priors
+    beta ~ normal(0,1e6);      // prior for slope
+    beta_year ~ normal(0,1e6);   // prior for year random effects
+ 
+    // Likelihood
+      surv_t1 ~ bernoulli_logit(mu);
     }
     
+  
       ", fill = T)
 sink()
 
@@ -139,7 +140,7 @@ posterior <- as.data.frame(sm)
 plot_title <- ggtitle("Posterior distributions",
                       "with medians and 80% intervals")
 mcmc_areas(posterior,
-           pars = c("alpha0", "beta0", "beta_year[1]", "beta_year[2]", "beta_year[3]", "beta_year[4]", "beta_year[5]"),
+           pars = c("beta[1]", "beta[2]", "beta_year[1]", "beta_year[2]", "beta_year[3]", "beta_year[4]", "beta_year[5]"),
            prob = 0.8) + plot_title
 sm_summary <- summary(sm)
 inits <- get_inits(sm)
@@ -147,54 +148,6 @@ shiny <- as.shinystan(sm)
 launch_shinystan(shiny)
 
 
-## GLMM for survival vs. log(size) with year and Endo effects
-
-sink("endodemog_surv_y_e.stan")
-cat("
-    data { 
-    int<lower=0> N;                     // number of observations
-    int<lower=0> Y;                     // number of years (used as index)
-    //int<lower=0> year_t[N];             // year of recruitment
-    real endo[N];          // status as (E+ or E-)
-    int<lower=0,upper=1> surv_t1[N];   // plant survival at time t+1 and target variable (response)
-    real<lower=0> logsize_t[N];                  // log of plant size at time t (predictor)
-    }
-    
-    parameters {
-    real alpha0;              // fixed intercept
-    real beta0;               // fixed slope
-    real beta_endo;           // endo slope
-   // vector[Y] beta_year;      // random year intercept
- 
-    }
-    
-    model {
-    vector[N] mu;
-    // Priors
-    alpha0 ~ normal(0,100);        // prior for intercept
-    beta0 ~ normal(0,100);         // prior for slope
-    beta_endo ~ beta(1,1);         // prior for endo
-   // beta_year ~ normal(0,100);   // prior for year random effects
-    // Linear Predictor
-    for(n in 1:N)
-    mu[n] = alpha0 + beta0*logsize_t[n] + beta_endo*endo[n];
-    // Likelihood
-    for(n in 1:N)
-    surv_t1[n] ~ bernoulli_logit(mu);
-    
-    }
-    
-
-    ",fill=T)
-sink()
-
-stanmodel <- stanc("endodemog_surv_y_e.stan")
-
-## Run the model by calling stan()
-sm <- stan(file = "endodemog_surv_y_e.stan", data = POAL_data_list,
-           iter = ni, warmup = nb, chains = nc)
-saveRDS(sm, file = "endodemog_surv_y_e.rds")
-sm <- readRDS(file = "endodemog_surv_y_e.rds")
 
 
 print(sm)
