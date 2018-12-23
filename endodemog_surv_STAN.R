@@ -142,7 +142,6 @@ cat("
     parameters {
     real alpha; //fixed intercept
     real beta; // fixed slope 
-    real eta;
     }
 
     model {
@@ -150,11 +149,10 @@ cat("
   //Priors
     alpha ~ normal(0,10);
     beta ~ normal(0,10);
-    eta ~ normal(0,1);
   //Likelihood
   for(n in 1:N){
     mu[n] = alpha + beta*logsize_t[n]; // linear predictor
-    surv_t1[n] ~ binomial_logit(mu, eta); // likelihood
+    surv_t1[n] ~ bernoulli_logit(mu); // likelihood
     }
     }
     ",fill=T)

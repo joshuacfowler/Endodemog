@@ -23,11 +23,12 @@ POAL_data <- LTREB_endodemog %>%
 str(POAL_data)
 dim(POAL_data)
 
-## create new column with log(size) and recode years
+## create new column with log(size) and recode years and plot (including fixing values entered as R where they should be plot 16)
 POAL_data1 <- POAL_data %>% 
   mutate(size_t, logsize_t = log(size_t)) %>% 
   mutate(year_t_index = as.factor(recode(year_t, '2007'=1, '2008'=2, '2009'=3, '2010'=4, '2011'=5, '2012'=6, '2013'=7, '2014'=8, '2015'=9, '2016'=10, '2017'=11))) %>% 
-  mutate(year_t1_index = as.factor(recode(year_t1, '2008'=2, '2009'=3, '2010'=4, '2011'=5, '2012'=6, '2013'=7, '2014'=8, '2015'=9, '2016'=10, '2017'=11, '2018'=12)))
+  mutate(year_t1_index = as.factor(recode(year_t1, '2008'=2, '2009'=3, '2010'=4, '2011'=5, '2012'=6, '2013'=7, '2014'=8, '2015'=9, '2016'=10, '2017'=11, '2018'=12))) %>% 
+  mutate(plot_index = as.factor(recode(plot, 'R'=8, '3'=1, '4'=2, '8'=3, '9'=4, '10'=5, '11'=6, '15'=7, '16'=8, '17'=9, '19'=10, '151'=11, '152'=12, '153'=13, '154'=14, '155'=15, '156'=16, '157'=17, '158'=18)))
 str(POAL_data1)
 dim(POAL_data1)
 # View(POAL_data1)
@@ -69,18 +70,29 @@ year_dat <- POAL_data1 %>%
 endo_dat <- POAL_data1 %>% 
   select(endo) %>% 
   filter(!is.na(endo)) %>% 
-  mutate(endo1 = as.integer(endo)-4) ## recoding endo to 0 or 1
+  mutate(endo1 = as.integer(as.integer(endo)-4)) ## recoding endo to 0 or 1
+origin_dat <- POAL_data1 %>% 
+  select(origin) %>% 
+  filter(!is.na(origin)) %>% 
+  mutate(origin1 = as.integer(case_when(origin == "O" ~ 0,
+                             origin == "R" ~ 1,
+                             origin == 16 ~ 1)))
+plot_dat <- POAL_data1 %>%
+  select(plot, plot_index) %>% 
+  filter(!is.na(plot_index)) %>% 
+  mutate(plot_index = as.integer(plot_index))
 
-class(year_dat$year_t_index)
 
 dim(surv_dat1)
 dim(size_dat1)
 dim(year_dat)
 dim(endo_dat)
+dim(origin_dat)
+dim(plot_dat)
 
-POAL_data_list <- list(surv_t1 = surv_dat1$surv_t1, logsize_t = size_dat1$logsize_t, endo = endo_dat$endo1, year_t = year_dat$year_t_index, N = 3241L, Y = 11L)
+POAL_data_list1 <- list(surv_t1 = surv_dat1$surv_t1, logsize_t = size_dat1$logsize_t, year_t = year_dat$year_t_index, N = 3241L, Y = 11L)
 
-str(POAL_data_list)
+str(POAL_data_list1)
 
 ## GLMM for survival vs. log(size) with year effects
 
@@ -104,7 +116,7 @@ cat("
    
        // Linear Predictor
     for(n in 1:N){
-       mu[n] = beta[1] + beta_year[year_t[n]] + beta[2]*logsize_t[n];
+       mu[n] =  beta[1] + beta_year[year_t[n]] + beta[2]*logsize_t[n];
     }
     // Priors
     beta ~ normal(0,1e6);      // prior for slope
@@ -121,8 +133,8 @@ sink()
 stanmodel <- stanc("endodemog_surv_year.stan")
 
 ## Run the model by calling stan()
-sm <- stan(file = "endodemog_surv_year.stan", data = POAL_data_list,
-           iter = ni, warmup = nb, chains = nc, init_r = .1)
+sm <- stan(file = "endodemog_surv_year.stan", data = POAL_data_list1,
+           iter = ni, warmup = nb, chains = nc)
 
 print(sm)
 ## save the stanfit object so that it can be 
@@ -158,12 +170,89 @@ traceplot(sm)
 
 
 
-## I'm not sure how to pull out the coefficients from the stanfit object yet
 
 
-x_dummy <- seq(min((POAL_data1$size_t),na.rm=T),max((POAL_data1$logsize_t),na.rm=T),0.1)
+# GLMM for Surv~ size +Endo + Origin  with year + plot random effects-------------------------
+# Data list for this model
+POAL_data_list <- list(surv_t1 = surv_dat1$surv_t1, 
+                       logsize_t = size_dat1$logsize_t, 
+                       endo = endo_dat$endo1, 
+                       origin = origin_dat$origin1,
+                       year_t = year_dat$year_t_index, 
+                       plot = plot_dat$plot_index,
+                       N = 3241L, K = 4, nyear = 11L, nplot = 18L)
+str(POAL_data_list) 
 
-plot(POAL_data$surv_t1 ~ log(POAL_data$size_t), xlab = "Size in year t", ylab = "Survival in year t+1")        
-points(surv_bin$mean_size, surv_bin$mean_surv, pch=16, cex=2)
-lines(x_dummy,invlogit(coef(posterior$mean[1])+coef(posterior$mean[2])*x_dummy),col="red",lwd=3)
+sink("endodemog_surv_full_POAL.stan")
+cat("
+    data { 
+    int<lower=0> N;                       // number of observations
+    int<lower=0> K;                       // number of predictors
+    
+    int<lower=0> nyear;                       // number of years (used as index)
+    int<lower=0> nplot;                     // number of plots (used as index)
+    int<lower=0> year_t[N];                      // year of observation
+    int<lower=0> plot[N];                     // plot id
+    
+    int<lower=0, upper=1> surv_t1[N];      // plant survival at time t+1 and target variable (response)
+    vector<lower=-1>[N] logsize_t;                  // log of plant size at time t (predictor)
+    int<lower=0, upper = 1> endo[N];            // endophyte status 
+    int<lower=0, upper=1> origin[N];            // origin status
+    }
+    
+    parameters {
+    real alpha;                  // intercept
+    vector[K] beta;              // predictor parameters
+    vector[nyear] beta_year;      // random year effect
+    vector[nplot] beta_plot;      // random plot effect
+    
+    //real<lower=0> sigma_y;        //year variance intercept
+    //real<lower=0> sigma_e;        //effect of endo on variance
+    }
+    
+    //transformed parameters {
+    //real<lower=0> sigma_0;       // year variance
+    //for(n in 1:N){
+    //sigma_0 = sigma_y + sigma_e*endo[n];
+    //}
+    //}
+    
+    model {
+    vector[N] mu;
+   
+       // Linear Predictor
+    for(n in 1:N){
+       mu[n] = alpha + beta[1]*logsize_t[n] + beta[1]*endo[n] + beta[3]*origin[n] 
+       + beta[4]*logsize_t[n]*endo[n]
+       + beta_year[year_t[n]] + beta_plot[plot[n]];
+    }
+    // Priors
+    alpha ~ normal(0,1e6);      // prior for fixed intercept
+    beta ~ normal(0,1e6);      // prior for predictor intercepts
+    beta_year ~ normal(0,1e6);   // prior for year random effects
+    beta_plot ~ normal(0, 1e6); // prior for plot random effects
+ 
+    // Likelihood
+      surv_t1 ~ bernoulli_logit(mu);
+    }
+    
+  
+      ", fill = T)
+sink()
 
+stanmodel <- stanc("endodemog_surv_full_POAL.stan")
+
+## Run the model by calling stan()
+sm1 <- stan(file = "endodemog_surv_full_POAL.stan", data = POAL_data_list,
+           iter = ni, warmup = nb, chains = nc)
+
+print(sm1)
+## save the stanfit object so that it can be 
+## called later without rerunning the model
+saveRDS(sm, file = "endodemog_surv_full_POAL.rds")
+sm <- readRDS(file = "endodemog_surv_full_POAL.rds")
+
+plot(sm, pars = "sigma_e")
+
+
+traceplot(sm, pars = c("sigma_e"))
