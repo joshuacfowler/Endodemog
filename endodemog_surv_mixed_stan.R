@@ -206,16 +206,16 @@ cat("
     vector[nyear] beta_year;      // random year effect
     vector[nplot] beta_plot;      // random plot effect
     
-    //real<lower=0> sigma_y;        //year variance intercept
-    //real<lower=0> sigma_e;        //effect of endo on variance
+    real<lower=0> sigma_y;        //year variance intercept
+    real sigma_e;        //effect of endo on variance
     }
     
-    //transformed parameters {
-    //real<lower=0> sigma_0;       // year variance
-    //for(n in 1:N){
-    //sigma_0 = sigma_y + sigma_e*endo[n];
-    //}
-    //}
+    transformed parameters {
+    real<lower=0> sigma_0;       // year variance
+    for(n in 1:N){
+    sigma_0 = sigma_y + sigma_e*endo[n];
+    }
+    }
     
     model {
     vector[N] mu;
@@ -229,7 +229,7 @@ cat("
     // Priors
     alpha ~ normal(0,1e6);      // prior for fixed intercept
     beta ~ normal(0,1e6);      // prior for predictor intercepts
-    beta_year ~ normal(0,1e6);   // prior for year random effects
+    beta_year ~ normal(0,sigma_0);   // prior for year random effects
     beta_plot ~ normal(0, 1e6); // prior for plot random effects
  
     // Likelihood
@@ -243,7 +243,7 @@ sink()
 stanmodel <- stanc("endodemog_surv_full_POAL.stan")
 
 ## Run the model by calling stan()
-sm1 <- stan(file = "endodemog_surv_full_POAL.stan", data = POAL_data_list,
+sm <- stan(file = "endodemog_surv_full_POAL.stan", data = POAL_data_list,
            iter = ni, warmup = nb, chains = nc)
 
 print(sm1)
