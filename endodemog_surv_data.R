@@ -357,7 +357,8 @@ POAL <- pmerge %>%
   rbind(poldmerge) %>% 
   rbind(roldmerge) %>% 
   rbind(rmerge) %>% 
-  mutate(species = "POAL")
+  mutate(species = "POAL") %>% 
+  mutate(surv_t1 = ifelse(surv_t1 == 'NA', NA, surv_t1))
 POAL <- POAL[!(is.na(POAL$surv_t1)),]
 
 View(POAL)
@@ -666,7 +667,8 @@ POSY <- po_merge %>%
   rbind(po_oldmerge) %>% 
   rbind(po_roldmerge) %>% 
   rbind(po_rmerge) %>% 
-  mutate(species = "POSY")
+  mutate(species = "POSY") %>% 
+  mutate(surv_t1 = ifelse(surv_t1 == 'NA', NA, surv_t1))
 POSY <- POSY[!(is.na(POSY$surv_t1)),]
 
 View(POSY)
@@ -1547,14 +1549,6 @@ LTREB_endodemog <- AGPE %>%
 
 
 
-
-
-
-
-
-
-
-
 # Pulling out the 2017 data from endo_demog_long --------------------------
 
 endo_demog_long<- read.csv("/Users/joshuacfowler/Dropbox/EndodemogData/Fulldataplusmetadata/endo_demog_long.csv")
@@ -1568,26 +1562,27 @@ endo2017 <- endo_demog_long %>%
   select("plot", "pos", "tag", "Endo", "origin", "Loc'n", "Birth Year",
          "TRT", "Plant", "year_t1", "surv_t1", "size_t1", "flw_t1",
          "year_t", "size_t", "species") %>% 
-  filter(year_t1 == "2017")
+  filter(year_t1 == "2017") %>% 
+  filter(!is.na(surv_t1))
 
 endo2017$Endo <- ifelse(endo2017$Endo == "plus", 1, ifelse(endo2017$Endo == "minus", 0, NA))
 endo2017$origin <- ifelse(endo2017$origin == "O", 0, ifelse(endo2017$origin == "R", 1, NA))
   
-endo2017<- endo2017[c("plot", "pos", "tag", "Endo", "origin",  "Birth Year",
+endo2017<- endo2017[c("plot", "pos", "tag", "Endo", "origin", "Loc'n", "Birth Year",
                       "TRT", "Plant", "year_t1", "surv_t1", "size_t1", "flw_t1",
                       "year_t", "size_t", "species")]
 
- # View(endo2017)
+  # View(endo2017)
 
 
 # Combining the 2017 data with the multi species data frame.
 
 LTREB_endodemog <- LTREB_endodemog %>% 
-  select("plot", "pos", "tag", "Endo", "origin",  "Birth Year",
+  select("plot", "pos", "tag", "Endo", "origin", "Loc'n", "Birth Year",
          "TRT", "Plant", "year_t1", "surv_t1", "size_t1", "flw_t1",
          "year_t", "size_t", "species") %>% 
   rbind(endo2017)
-# View(LTREB_endodemog)
+ # View(LTREB_endodemog)
 
 # Now we can check for funky, out of place values
 str(LTREB_endodemog)
@@ -1599,18 +1594,22 @@ unique(LTREB_endodemog$flw_t1)
 
 
 
-# There is are survival values with `?` and `XX`. 
+# There are survival values with `?` and `XX`. 
 # Reassign the surv_t1 columns to be numeric
-LTREB_endodemog[which(LTREB_endodemog$surv_t1 == "XX"),] 
+xx <- LTREB_endodemog[which(LTREB_endodemog$surv_t1 == "XX"),] 
+q1 <- LTREB_endodemog[which(LTREB_endodemog$surv_t1 == "1?"),]
+q0 <- LTREB_endodemog[which(LTREB_endodemog$surv_t1 == "0?"),]
+LTREB_endodemog[which(LTREB_endodemog$surv_t1 == "XX"),] <- "0"
+LTREB_endodemog[which(LTREB_endodemog$surv_t1 == "1?"),] <- "1"
+LTREB_endodemog[which(LTREB_endodemog$surv_t1 == "0?"),] <- "0"
 
-LTREB_endodemog %>% 
-  filter(surv_t1 == "XX")
-LTREB_endodemog %>% 
-  filter(grepl("?", surv_t1))
+
 LTREB_endodemog$surv_t1 <- as.numeric(as.character(LTREB_endodemog$surv_t1))
 str(LTREB_endodemog)
 
 # reassign the Birth Year column to be numeric
+LTREB_endodemog[which(LTREB_endodemog$'Birth Year' == "Q2010"),]
+
 LTREB_endodemog$`Birth Year` <- as.numeric(as.character(LTREB_endodemog$`Birth Year`))
 
 
@@ -1624,13 +1623,19 @@ LTREB_endodemog$size_t <- as.numeric(as.character(LTREB_endodemog$size_t1))
 
 # There is a value for flower tillers of "check tag".
 # Reassign the flw_t1 column to be numeric
-LTREB_endodemog[which(LTREB_endodemog$flw_t1 == "which tag")]
-
+LTREB_endodemog[which(LTREB_endodemog$flw_t1 == "check tag"),] <- NA
 
 str(LTREB_endodemog)
+
 # This can still be further cleaned up, but I am going to take this data frame
 # as a csv file for now that I can use for individual species models
 write_csv(LTREB_endodemog, "LTREB_endodemog.csv")
+
+
+
+
+
+
 
 # Pulling out the seed production estimates. These are not measured for all plants, and so will go into a separate dataframe------------------------------
 # Pulling out the seed production estimates for the "New" POAL data --------
