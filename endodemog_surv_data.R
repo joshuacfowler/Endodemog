@@ -370,8 +370,6 @@ View(POAL)
 
 
 
-
-
 # Combining measurements across years for the “New” POSY data -------------
 
 ## recoding for the year of measurement
@@ -848,7 +846,6 @@ View(LOAR)
 
 
 
-
 # Combining measurements across years for the FESU data ------------------
 
 ## Combining measurements across years for Surv, Growth, and Flowering using melt
@@ -1188,7 +1185,6 @@ View(ELVI)
 
 
 
-
 # Combining measurements across years for the ELRI data ------------------
 
 ## Combining measurements across years for Surv, Growth, and Flowering using melt
@@ -1350,8 +1346,6 @@ ELRI <- elri_merge %>%
 ELRI <- ELRI[!(is.na(ELRI$surv_t1)),]
 
 View(ELRI)
-
-
 
 
 
@@ -1634,8 +1628,9 @@ LTREB_endodemog[which(LTREB_endodemog$flw_t1 == "which tag")]
 
 
 str(LTREB_endodemog)
-
-
+# This can still be further cleaned up, but I am going to take this data frame
+# as a csv file for now that I can use for individual species models
+write_csv(LTREB_endodemog, "LTREB_endodemog.csv")
 
 # Pulling out the seed production estimates. These are not measured for all plants, and so will go into a separate dataframe------------------------------
 # Pulling out the seed production estimates for the "New" POAL data --------
