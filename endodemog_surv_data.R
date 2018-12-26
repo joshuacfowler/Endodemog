@@ -1541,7 +1541,7 @@ LTREB_endodemog <- AGPE %>%
   rbind(FESU) %>% 
   rbind(POAL) %>%  
   rbind(POSY)
-# View(LTREB_endodemog)
+ # View(LTREB_endodemog)
 
 
 
@@ -1567,7 +1567,7 @@ endo2017 <- endo_demog_long %>%
   mutate(Plant = NA) %>% 
   select("plot", "pos", "tag", "Endo", "origin", "Loc'n", "Birth Year",
          "TRT", "Plant", "year_t1", "surv_t1", "size_t1", "flw_t1",
-         "year_t", "size_t") %>% 
+         "year_t", "size_t", "species") %>% 
   filter(year_t1 == "2017")
 
 endo2017$Endo <- ifelse(endo2017$Endo == "plus", 1, ifelse(endo2017$Endo == "minus", 0, NA))
@@ -1575,9 +1575,9 @@ endo2017$origin <- ifelse(endo2017$origin == "O", 0, ifelse(endo2017$origin == "
   
 endo2017<- endo2017[c("plot", "pos", "tag", "Endo", "origin",  "Birth Year",
                       "TRT", "Plant", "year_t1", "surv_t1", "size_t1", "flw_t1",
-                      "year_t", "size_t")]
+                      "year_t", "size_t", "species")]
 
-# View(endo2017)
+ # View(endo2017)
 
 
 # Combining the 2017 data with the multi species data frame.
@@ -1585,7 +1585,7 @@ endo2017<- endo2017[c("plot", "pos", "tag", "Endo", "origin",  "Birth Year",
 LTREB_endodemog <- LTREB_endodemog %>% 
   select("plot", "pos", "tag", "Endo", "origin",  "Birth Year",
          "TRT", "Plant", "year_t1", "surv_t1", "size_t1", "flw_t1",
-         "year_t", "size_t") %>% 
+         "year_t", "size_t", "species") %>% 
   rbind(endo2017)
 # View(LTREB_endodemog)
 
