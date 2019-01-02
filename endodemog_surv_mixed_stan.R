@@ -43,16 +43,14 @@ options(mc.cores = parallel::detectCores())
 set.seed(123)
 
 ## MCMC settings
-ni <- 200
+ni <- 500
 nb <- 100
 nc <- 1
 
 ## data for GLMM
 POAL_data1 <- POAL_data1 %>% 
-  filter(!is.na(surv_t1)) %>% 
-  filter(!is.na(logsize_t)) %>% 
-  filter(!is.na(year_t_index))
-  
+  filter(!is.na(surv_t1)) 
+
 
 dim(POAL_data1)
 str(POAL_data1)
@@ -75,8 +73,8 @@ origin_dat <- POAL_data1 %>%
   select(origin) %>% 
   filter(!is.na(origin)) %>% 
   mutate(origin1 = as.integer(case_when(origin == "O" ~ 0,
-                             origin == "R" ~ 1,
-                             origin == 16 ~ 1)))
+                                        origin == "R" ~ 1,
+                                        origin == 16 ~ 1)))
 plot_dat <- POAL_data1 %>%
   select(plot, plot_index) %>% 
   filter(!is.na(plot_index)) %>% 
@@ -96,8 +94,9 @@ str(POAL_data_list1)
 
 ## GLMM for survival vs. log(size) with year effects
 
-sink("endodemog_surv_year.stan")
+sink("endodemog_surv_year3.stan")
 cat("
+    
     data { 
     int<lower=0> N;                       // number of observations
     int<lower=0> Y;                       // number of years (used as index)
@@ -126,27 +125,62 @@ cat("
       surv_t1 ~ bernoulli_logit(mu);
     }
     
+    generated quantities{
+    int yrep[N];
+    vector[N] y_resid;
+    vector[N] yrep_resid;
+    real fit;
+    real fit_yrep;
+    vector[N] mu;
+    
+    // for posterior predictive check
+    for (n in 1:N) {
+      mu[n] =  beta[1] + beta_year[year_t[n]] + beta[2]*logsize_t[n];
+     
+      yrep[n] = bernoulli_logit_rng(mu[n]);
+      y_resid[n] = fabs(surv_t1[n] - (mu[n]));
+      yrep_resid[n] = fabs(yrep[n] - (mu[n]));
+    }
+    
+    
+    fit = sum(y_resid);
+    fit_yrep = sum(yrep_resid);
+    }
   
       ", fill = T)
 sink()
 
-stanmodel <- stanc("endodemog_surv_year.stan")
+stanmodel <- stanc("endodemog_surv_year3.stan")
 
 ## Run the model by calling stan()
-sm <- stan(file = "endodemog_surv_year.stan", data = POAL_data_list1,
+sm <- stan(file = "endodemog_surv_year3.stan", data = POAL_data_list1,
            iter = ni, warmup = nb, chains = nc)
 
 print(sm)
 ## save the stanfit object so that it can be 
 ## called later without rerunning the model
-saveRDS(sm, file = "endodemog_surv_year.rds")
-sm <- readRDS(file = "endodemog_surv_year.rds")
+saveRDS(sm, file = "endodemog_surv_year3.rds")
+sm <- readRDS(file = "endodemog_surv_year3.rds")
 
 
 ## check convergence and posterior distributions
 plot(sm)
+y_rep <- as.matrix(sm, pars = "yrep")
+fit <- as.matrix(sm, pars = "fit")
+fit_yrep <- as.matrix(sm, pars = "fit_yrep")
+y_resid <- as.matrix(sm, par = "y_resid")
+dim(y_resid)
+yrep_resid <- as.matrix(sm, par = "yrep_resid")
 
-traceplot(sm)
+plot(x = fit_yrep, y = fit)
+abline(a = 0, b = 1, col = "red")
+
+plot(x = yrep_resid, y = y_resid)
+abline(a = 0, b = 1, col = "red")
+ppc_dens_overlay(surv_dat1$surv_t1, yrep[1:400, ])
+ppc_stat(y = surv_dat1$surv_t1, yrep = yrep, stat = "mean")
+
+traceplot(sm, pars = c("beta[1]", "beta[2]"))
 
 posterior <- as.data.frame(sm)
 plot_title <- ggtitle("Posterior distributions",
@@ -180,10 +214,10 @@ POAL_data_list <- list(surv_t1 = surv_dat1$surv_t1,
                        origin = origin_dat$origin1,
                        year_t = year_dat$year_t_index, 
                        plot = plot_dat$plot_index,
-                       N = 3241L, K = 4, nyear = 11L, nplot = 18L)
+                       N = 3241L, K = 4L, nyear = 11L, nplot = 18L)
 str(POAL_data_list) 
 
-sink("endodemog_surv_full_POAL.stan")
+sink("endodemog_surv_all_POAL1.stan")
 cat("
     data { 
     int<lower=0> N;                       // number of observations
@@ -203,56 +237,97 @@ cat("
     parameters {
     real alpha;                  // intercept
     vector[K] beta;              // predictor parameters
-    vector[nyear] beta_year;      // random year effect
-    vector[nplot] beta_plot;      // random plot effect
+    vector[nyear] tau_year;      // random year effect
+    vector[nplot] tau_plot;      // random plot effect
     
-    real<lower=0> sigma_y;        //year variance intercept
-    real sigma_e;        //effect of endo on variance
     }
-    
-    transformed parameters {
-    real<lower=0> sigma_0;       // year variance
-    for(n in 1:N){
-    sigma_0 = sigma_y + sigma_e*endo[n];
-    }
-    }
+
     
     model {
     vector[N] mu;
    
        // Linear Predictor
     for(n in 1:N){
-       mu[n] = alpha + beta[1]*logsize_t[n] + beta[1]*endo[n] + beta[3]*origin[n] 
-       + beta[4]*logsize_t[n]*endo[n]
-       + beta_year[year_t[n]] + beta_plot[plot[n]];
+       mu[n] = alpha + beta[1]*logsize_t[n] + beta[2]*endo[n] + beta[3]*origin[n] 
+       +beta[4]*logsize_t[n]*endo[n]
+       + tau_year[year_t[n]] + tau_plot[plot[n]];
     }
     // Priors
     alpha ~ normal(0,1e6);      // prior for fixed intercept
     beta ~ normal(0,1e6);      // prior for predictor intercepts
-    beta_year ~ normal(0,sigma_0);   // prior for year random effects
-    beta_plot ~ normal(0, 1e6); // prior for plot random effects
+    tau_year ~ normal(0,1e6);   // prior for year random effects
+    tau_plot ~ normal(0,1e6); // prior for plot random effects
  
     // Likelihood
       surv_t1 ~ bernoulli_logit(mu);
     }
     
+   generated quantities{
+    int yrep[N];
+    vector[N] y_resid;
+    vector[N] yrep_resid;
+    real fit;
+    real fit_yrep;
+    vector[N] mu;
+    
+    // for posterior predictive check
+    for(n in 1:N){
+      mu[n] = alpha + beta[1]*logsize_t[n] + beta[2]*endo[n] + beta[3]*origin[n] 
+      +beta[4]*logsize_t[n]*endo[n]
+      + tau_year[year_t[n]] + tau_plot[plot[n]];
+      yrep[n] = bernoulli_logit_rng(mu[n]);
+      y_resid[n] = fabs(surv_t1[n] - (mu[n]));
+      yrep_resid[n] = fabs(yrep[n] - (mu[n]));
+    }
+    
+    fit = sum(y_resid);
+    fit_yrep = sum(yrep_resid);
+    }
   
-      ", fill = T)
+    ", fill = T)
 sink()
 
-stanmodel <- stanc("endodemog_surv_full_POAL.stan")
+stanmodel <- stanc("endodemog_surv_all_POAL1.stan")
 
 ## Run the model by calling stan()
-sm <- stan(file = "endodemog_surv_full_POAL.stan", data = POAL_data_list,
+sm <- stan(file = "endodemog_surv_all_POAL1.stan", data = POAL_data_list,
            iter = ni, warmup = nb, chains = nc)
 
-print(sm1)
+print(sm)
 ## save the stanfit object so that it can be 
 ## called later without rerunning the model
-saveRDS(sm, file = "endodemog_surv_full_POAL.rds")
-sm <- readRDS(file = "endodemog_surv_full_POAL.rds")
+saveRDS(sm, file = "endodemog_surv_all_POAL1.rds")
+sm <- readRDS(file = "endodemog_surv_all_POAL1.rds")
 
-plot(sm, pars = "sigma_e")
+print(sm)
+plot(sm)
+
+traceplot(sm, pars = c("beta[2]"))
+stan_dens(sm, pars = c("beta[4]"))
+surv_t1 <- surv_dat1$surv_t1
+yrep <- as.matrix(sm, pars = "yrep")
+fit <- as.matrix(sm, pars = "fit")
+fit_yrep <- as.matrix(sm, pars = "fit_yrep")
+y_resid <- as.matrix(sm, par = "y_resid")
+dim(y_resid)
+yrep_resid <- as.matrix(sm, par = "yrep_resid")
+
+plot(x = fit_yrep, y = fit)
+abline(a = 0, b = 1, col = "red")
+
+ppc_dens_overlay(surv_t1, y_rep[1:400, ])
+ppc_stat(y = surv_t1, yrep = y_rep, stat = "mean")
 
 
-traceplot(sm, pars = c("sigma_e"))
+posterior <-  as.data.frame(sm)
+plot_title <- ggtitle("Posterior distributions",
+                      "with medians and 80% intervals")
+
+mcmc_areas(posterior, 
+           pars = c("beta[2]"),
+           prob = 0.8) + plot_title
+
+sm_summary <- summary(sm)
+inits <- get_inits(sm)
+shiny <- as.shinystan(sm)
+launch_shinystan(shiny)
