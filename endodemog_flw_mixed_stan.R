@@ -1,6 +1,6 @@
 
 ## Title: Grass endophyte population model with a bayesian framework
-## Purpose: Creates survival kernel written in STAN with mixed effects, 
+## Purpose: Creates flowering kernel written in STAN with mixed effects, 
 ## and does visualisation of posterior predictive checks
 ## Authors: Joshua and Tom
 #############################################################
@@ -32,7 +32,7 @@ POAL_data1 <- POAL_data %>%
   mutate(plot_index = as.factor(recode(plot, 'R'=8, '3'=1, '4'=2, '8'=3, '9'=4, '10'=5, '11'=6, '15'=7, '16'=8, '17'=9, '19'=10, '151'=11, '152'=12, '153'=13, '154'=14, '155'=15, '156'=16, '157'=17, '158'=18)))
 str(POAL_data1)
 dim(POAL_data1)
-View(POAL_data1)
+# View(POAL_data1)
 
 invlogit<-function(x){exp(x)/(1+exp(x))}
 logit = function(x) { log(x/(1-x)) }
@@ -50,16 +50,19 @@ nc <- 1
 
 ## data for GLMM
 POAL_data1 <- POAL_data1 %>% 
-  filter(!is.na(flw_t1)) 
+  filter(!is.na(surv_t1)) %>% 
+  filter(!is.na(size_t)) %>% 
+  filter(surv_t1!=0)
 
 
 
 dim(POAL_data1)
 str(POAL_data1)
-View(POAL_data1)
+# View(POAL_data1)
 flw_dat1 <- POAL_data1 %>% 
-  select(flw_t1) %>% 
-  filter(!is.na(flw_t1))
+  select(seed_t1) %>% 
+  mutate(flw_t1 = as.integer(case_when(seed_t1 == 0 ~ 0,
+                                      seed_t1 > 0 ~ 1)))
 size_dat1 <- POAL_data1 %>% 
   select(logsize_t) %>% 
   filter(!is.na(logsize_t))
@@ -90,7 +93,7 @@ dim(endo_dat)
 dim(origin_dat)
 dim(plot_dat)
 
-POAL_data_list1 <- list(flw_t1 = flw_dat1$flw_t1, logsize_t = size_dat1$logsize_t, year_t = year_dat$year_t_index, N = 3241L, Y = 11L)
+POAL_data_list1 <- list(flw_t1 = flw_dat1$flw_t1, logsize_t = size_dat1$logsize_t, year_t = year_dat$year_t_index, N = 1482, Y = 11)
 
 str(POAL_data_list1)
 
@@ -126,6 +129,17 @@ cat("
       flw_t1 ~ bernoulli_logit(mu);
     }
     
+       generated quantities{
+    int yrep[N];
+    vector[N] mu;
+    
+    // for posterior predictive check
+    for (n in 1:N) {
+      mu[n] =  beta[1] + beta_year[year_t[n]] + beta[2]*logsize_t[n];
+     
+      yrep[n] = bernoulli_logit_rng(mu[n]);
+    }
+    }
   
       ", fill = T)
 sink()
@@ -142,11 +156,30 @@ print(sm)
 saveRDS(sm, file = "endodemog_flw_year.rds")
 sm <- readRDS(file = "endodemog_flw_year.rds")
 
+# Check residuals
+flw_t1 <- as.vector(flw_dat1$flw_t1)
+yrep <- as.matrix(sm, pars = "yrep")
+mu <- as.matrix(sm, pars = "mu")
+p <- invlogit(mu)
+
+for(i in 1:100){
+  y_resid <-  abs(flw_t1 - p);
+  yrep_resid <- abs(yrep - p[i,]);
+}
+
+fit <- as.matrix(rowSums(y_resid))
+fit_yrep <- as.matrix(rowSums(yrep_resid))
+
+
+plot(x = fit_yrep, y = fit, main = "Residuals full model")
+abline(a = 0, b = 1, col = "red")
 
 ## check convergence and posterior distributions
+
+
 plot(sm)
 
-traceplot(sm)
+traceplot(sm, pars = c("beta_year[1]"))
 
 posterior <- as.data.frame(sm)
 plot_title <- ggtitle("Posterior distributions",
@@ -180,10 +213,10 @@ POAL_data_list <- list(flw_t1 = flw_dat1$flw_t1,
                        origin = origin_dat$origin1,
                        year_t = year_dat$year_t_index, 
                        plot = plot_dat$plot_index,
-                       N = 3241L, K = 4L, nyear = 11L, nplot = 18L)
+                       N = 1482L, K = 4L, nyear = 11L, nplot = 18L)
 str(POAL_data_list) 
 
-sink("endodemog_flw_full_POAL.stan")
+sink("endodemog_flw_full_POAL1.stan")
 cat("
     data { 
     int<lower=0> N;                       // number of observations
@@ -236,21 +269,56 @@ cat("
       flw_t1 ~ bernoulli_logit(mu);
     }
     
+         generated quantities{
+    int yrep[N];
+    vector[N] mu;
+    
+    // for posterior predictive check
+    for (n in 1:N) {
+      mu[n] = alpha + beta[1]*logsize_t[n] + beta[1]*endo[n] + beta[3]*origin[n] 
+        + beta[4]*logsize_t[n]*endo[n]
+        + beta_year[year_t[n]] + beta_plot[plot[n]];
+      yrep[n] = bernoulli_logit_rng(mu[n]);
+    }
+    }
   
       ", fill = T)
 sink()
 
-stanmodel <- stanc("endodemog_flw_full_POAL.stan")
+stanmodel <- stanc("endodemog_flw_full_POAL1.stan")
 
 ## Run the model by calling stan()
-sm <- stan(file = "endodemog_flw_full_POAL.stan", data = POAL_data_list,
+sm <- stan(file = "endodemog_flw_full_POAL1.stan", data = POAL_data_list,
            iter = ni, warmup = nb, chains = nc)
 
 print(sm)
 ## save the stanfit object so that it can be 
 ## called later without rerunning the model
-saveRDS(sm, file = "endodemog_flw_full_POAL.rds")
-sm <- readRDS(file = "endodemog_flw_full_POAL.rds")
+saveRDS(sm, file = "endodemog_flw_full_POAL1.rds")
+sm <- readRDS(file = "endodemog_flw_full_POAL1.rds")
+
+# Check residuals
+flw_t1 <- as.vector(flw_dat1$flw_t1)
+yrep <- as.matrix(sm, pars = "yrep")
+mu <- as.matrix(sm, pars = "mu")
+p <- invlogit(mu)
+
+for(i in 1:100){
+  y_resid <-  abs(flw_t1 - p);
+  yrep_resid <- abs(yrep - p[i,]);
+}
+
+fit <- as.matrix(rowSums(y_resid))
+fit_yrep <- as.matrix(rowSums(yrep_resid))
+
+
+plot(x = fit, y = fit_yrep, main = "flw Residuals full model")
+abline(a = 0, b = 1, col = "red")
+
+
+
+
+
 
 plot(sm, pars = "sigma_e")
 
